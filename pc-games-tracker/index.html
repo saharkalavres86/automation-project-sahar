@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PC Games Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>🎮 Upcoming PC Games</h1>
+        <p>Stay updated with the latest game releases</p>
+    </header>
+
+    <div class="filters">
+        <input type="text" id="search" placeholder="Search games...">
+        <select id="sort">
+            <option value="name">Name (A-Z)</option>
+            <option value="released">Release Date</option>
+            <option value="rating">Rating</option>
+        </select>
+        <select id="genre">
+            <option value="">All Genres</option>
+            <option value="action">Action</option>
+            <option value="rpg">RPG</option>
+            <option value="shooter">Shooter</option>
+            <option value="adventure">Adventure</option>
+            <option value="strategy">Strategy</option>
+        </select>
+    </div>
+
+    <div id="loading" class="loading">Loading games...</div>
+    <div id="games-grid" class="games-grid"></div>
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
