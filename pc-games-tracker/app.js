@@ -1,9 +1,15 @@
-const API_KEY = CONFIG.API_KEY;
-const BASE_URL = 'https://api.rawg.io/api';
-const today = new Date().toISOString().split('T')[0];
-const nextYear = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+const BASE_URL = 'http://localhost:3000/api';
 
 let allGames = [];
+
+function formatDate(dateStr) {
+    if (!dateStr) return 'TBA';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+}
 
 function showSkeletons() {
     const grid = document.getElementById('games-grid');
@@ -20,16 +26,16 @@ function showSkeletons() {
 async function fetchGames(genre = '', ordering = 'name') {
     showSkeletons();
 
-    const genreParam = genre ? `&genres=${genre}` : '';
-    const url = `${BASE_URL}/games?key=${API_KEY}&dates=${today},${nextYear}&platforms=4&ordering=${ordering}&page_size=40${genreParam}`;
+    const params = new URLSearchParams({ sort: ordering });
+    if (genre) params.append('genre', genre);
 
     try {
-        const response = await fetch(url);
-        const data = await response.json();
-        allGames = data.results;
+        const response = await fetch(`${BASE_URL}/games?${params}`);
+        allGames = await response.json();
         displayGames(allGames);
     } catch (error) {
-        document.getElementById('games-grid').innerHTML = '<p style="color:#888;text-align:center;grid-column:1/-1">Failed to load games.</p>';
+        document.getElementById('games-grid').innerHTML =
+            '<p style="color:#888;text-align:center;grid-column:1/-1">Failed to load games.</p>';
     }
 }
 
@@ -52,7 +58,10 @@ function displayGames(games) {
             ? `<img src="${game.background_image}" alt="${game.name}" loading="lazy">`
             : `<div class="no-image">🎮</div>`;
 
-        const genres = game.genres?.map(g => `<span class="genre-tag">${g.name}</span>`).join('') || '';
+        const genres = game.genres
+            ? game.genres.split(', ').map(g => `<span class="genre-tag">${g}</span>`).join('')
+            : '';
+
         const rating = game.rating ? `⭐ ${game.rating}/5` : 'No rating';
 
         card.innerHTML = `
@@ -60,7 +69,7 @@ function displayGames(games) {
             <div class="game-info">
                 <h3>${game.name}</h3>
                 <div class="game-meta">
-                    <span class="release-date">📅 ${game.released || 'TBA'}</span>
+                    <span class="release-date">📅 ${formatDate(game.release_date)}</span>
                     <span class="rating">${rating}</span>
                 </div>
                 <div class="genres">${genres}</div>
@@ -75,9 +84,6 @@ function openModal(game) {
     const existing = document.querySelector('.modal-overlay');
     if (existing) existing.remove();
 
-    const genres = game.genres?.map(g => g.name).join(', ') || 'N/A';
-    const platforms = game.platforms?.map(p => p.platform.name).join(', ') || 'N/A';
-
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
@@ -87,10 +93,10 @@ function openModal(game) {
             ${game.background_image ? `<img src="${game.background_image}" alt="${game.name}">` : ''}
             <div class="modal-body">
                 <h2>${game.name}</h2>
-                <p>📅 <strong>Release Date:</strong> ${game.released || 'TBA'}</p>
+                <span class="release-date">📅 ${formatDate(game.release_date)}</span>
                 <p>⭐ <strong>Rating:</strong> ${game.rating || 'N/A'} / 5</p>
-                <p>🎭 <strong>Genres:</strong> ${genres}</p>
-                <p>🖥️ <strong>Platforms:</strong> ${platforms}</p>
+                <p>🎭 <strong>Genres:</strong> ${game.genres || 'N/A'}</p>
+                <p>🖥️ <strong>Platforms:</strong> ${game.platforms || 'N/A'}</p>
                 <p>🎮 <strong>Metacritic:</strong> ${game.metacritic || 'N/A'}</p>
             </div>
         </div>
