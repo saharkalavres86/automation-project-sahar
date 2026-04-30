@@ -5,6 +5,7 @@
     "start": "node backend/server.js"
   },
   "dependencies": {
+    "@playwright/test": "^1.59.1",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
     "express": "^4.22.1",
