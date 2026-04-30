@@ -5,6 +5,18 @@ import cron from 'node-cron';
 import pool from './db.js';
 import { fetchAndSaveGames } from './fetchGames.js';
 
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+app.get('/', (req, res) => {
+    res.sendFile(join(__dirname, '../index.html'));
+});
+
+app.use('/static', express.static(join(__dirname, '../static')));
+
 dotenv.config();
 
 const app = express();
