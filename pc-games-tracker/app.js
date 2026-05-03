@@ -334,14 +334,14 @@ function openModal(game) {
     const existing = document.querySelector('.modal-overlay');
     if (existing) existing.remove();
 
-    const screenshotList = game.screenshots ? game.screenshots.split(',') : [];
+ const screenshotList = game.screenshots ? game.screenshots.split(',') : [];
 
-    const screenshots = screenshotList.length > 0
-        ? screenshotList.map(s =>
-            `<img src="${s}" alt="screenshot" class="screenshot-img" referrerpolicy="no-referrer"
-            onclick="openLightbox('${s}', ${JSON.stringify(screenshotList)})">`
-          ).join('')
-        : '';
+const screenshots = screenshotList.length > 0
+    ? screenshotList.map((s, i) =>
+        `<img src="${s}" alt="screenshot" class="screenshot-img" referrerpolicy="no-referrer"
+        data-index="${i}" data-screenshots='${JSON.stringify(screenshotList)}'>`
+      ).join('')
+    : '';
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -370,7 +370,17 @@ function openModal(game) {
     `;
 
     document.body.appendChild(overlay);
+// Screenshot click handler
+overlay.querySelectorAll('.screenshot-img').forEach(img => {
+    img.addEventListener('click', () => {
+        const screenshots = JSON.parse(img.dataset.screenshots);
+        const index = parseInt(img.dataset.index);
+        openLightbox(screenshots[index], screenshots);
+    });
+});
+
 }
+
 
 // ─── EVENT LISTENERS ─────────────────────────────────────
 document.getElementById('search').addEventListener('input', (e) => {
