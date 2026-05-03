@@ -86,16 +86,20 @@ test('Sort by Name A-Z is default', async ({ page }) => {
     });
 
     // Genre Filter Tests
-    test('Filter by Action genre works', async ({ page }) => {
-        await page.selectOption('#genre', 'action');
-        await page.waitForTimeout(1000);
-        const cards = page.locator('.game-card');
-        const count = await cards.count();
-        if (count > 0) {
-            const firstGenre = await cards.first().locator('.genre-tag').first().textContent();
-            expect(firstGenre.toLowerCase()).toContain('action');
+test('Filter by Action genre works', async ({ page }) => {
+    await page.selectOption('#genre', 'action');
+    await page.waitForTimeout(1000);
+    const cards = page.locator('.game-card');
+    const count = await cards.count();
+    if (count > 0) {
+        // Check all visible cards have action somewhere in their genres
+        for (let i = 0; i < Math.min(count, 5); i++) {
+            const genreTags = await cards.nth(i).locator('.genre-tag').allTextContents();
+            const hasAction = genreTags.some(g => g.toLowerCase().includes('action'));
+            expect(hasAction).toBe(true);
         }
-    });
+    }
+});
 
     test('Filter by RPG genre works', async ({ page }) => {
         await page.selectOption('#genre', 'rpg');
