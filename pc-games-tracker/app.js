@@ -297,11 +297,11 @@ function openModal(game) {
     const existing = document.querySelector('.modal-overlay');
     if (existing) existing.remove();
 
-    const screenshots = game.screenshots
-        ? game.screenshots.split(',').map(s =>
-            `<img src="${s}" alt="screenshot" class="screenshot-img" referrerpolicy="no-referrer">`
-          ).join('')
-        : '';
+const screenshots = game.screenshots
+    ? game.screenshots.split(',').map(s =>
+        `<img src="${s}" alt="screenshot" class="screenshot-img" referrerpolicy="no-referrer" onclick="openLightbox('${s}')">`
+      ).join('')
+    : '';
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -347,6 +347,26 @@ document.getElementById('sort').addEventListener('change', (e) => {
 document.getElementById('genre').addEventListener('change', (e) => {
     fetchGames(e.target.value, document.getElementById('sort').value);
 });
+
+// ─── LIGHTBOX ────────────────────────────────────────────
+function openLightbox(src) {
+    const existing = document.querySelector('.lightbox-overlay');
+    if (existing) existing.remove();
+
+    const lightbox = document.createElement('div');
+    lightbox.className = 'lightbox-overlay';
+    lightbox.onclick = () => lightbox.remove();
+
+    lightbox.innerHTML = `
+        <div class="lightbox-content">
+            <img src="${src}" alt="screenshot" referrerpolicy="no-referrer">
+            <button class="lightbox-close" onclick="this.closest('.lightbox-overlay').remove()">✕</button>
+        </div>
+    `;
+
+    document.body.appendChild(lightbox);
+}
+
 
 // ─── INIT ────────────────────────────────────────────────
 async function init() {
