@@ -261,7 +261,6 @@ function displayGames(games) {
         return;
     }
 
-    // Always show "this week" games first
     games = [...games].sort((a, b) => {
         const aNew = isNewRelease(a.release_date) ? 0 : 1;
         const bNew = isNewRelease(b.release_date) ? 0 : 1;
@@ -330,25 +329,36 @@ function displayGames(games) {
 }
 
 // ─── MODAL ───────────────────────────────────────────────
+function closeModal() {
+    const overlay = document.querySelector('.modal-overlay');
+    if (overlay) overlay.remove();
+    document.body.style.overflow = '';
+}
+
 function openModal(game) {
     const existing = document.querySelector('.modal-overlay');
     if (existing) existing.remove();
 
- const screenshotList = game.screenshots ? game.screenshots.split(',') : [];
+    document.body.style.overflow = 'hidden';
 
-const screenshots = screenshotList.length > 0
-    ? screenshotList.map((s, i) =>
-        `<img src="${s}" alt="screenshot" class="screenshot-img" referrerpolicy="no-referrer"
-        data-index="${i}" data-screenshots='${JSON.stringify(screenshotList)}'>`
-      ).join('')
-    : '';
+    const screenshotList = game.screenshots ? game.screenshots.split(',') : [];
+
+    const screenshots = screenshotList.length > 0
+        ? screenshotList.map((s, i) =>
+            `<img src="${s}" alt="screenshot" class="screenshot-img" referrerpolicy="no-referrer"
+            data-index="${i}" data-screenshots='${JSON.stringify(screenshotList)}'>`
+          ).join('')
+        : '';
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
-    overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+    overlay.onclick = (e) => {
+        if (e.target === overlay) closeModal();
+    };
 
     overlay.innerHTML = `
         <div class="modal">
+            <button class="modal-close-btn" onclick="closeModal()">✕</button>
             ${game.background_image ? `<img src="${game.background_image}" alt="${game.name}" class="modal-main-img" referrerpolicy="no-referrer">` : ''}
             <div class="modal-body">
                 <h2>${game.name}</h2>
@@ -370,17 +380,15 @@ const screenshots = screenshotList.length > 0
     `;
 
     document.body.appendChild(overlay);
-// Screenshot click handler
-overlay.querySelectorAll('.screenshot-img').forEach(img => {
-    img.addEventListener('click', () => {
-        const screenshots = JSON.parse(img.dataset.screenshots);
-        const index = parseInt(img.dataset.index);
-        openLightbox(screenshots[index], screenshots);
+
+    overlay.querySelectorAll('.screenshot-img').forEach(img => {
+        img.addEventListener('click', () => {
+            const screenshots = JSON.parse(img.dataset.screenshots);
+            const index = parseInt(img.dataset.index);
+            openLightbox(screenshots[index], screenshots);
+        });
     });
-});
-
 }
-
 
 // ─── EVENT LISTENERS ─────────────────────────────────────
 document.getElementById('search').addEventListener('input', (e) => {
