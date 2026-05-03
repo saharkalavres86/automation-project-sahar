@@ -92,7 +92,6 @@ test('Filter by Action genre works', async ({ page }) => {
     const cards = page.locator('.game-card');
     const count = await cards.count();
     if (count > 0) {
-        // Check all visible cards have action somewhere in their genres
         for (let i = 0; i < Math.min(count, 5); i++) {
             const genreTags = await cards.nth(i).locator('.genre-tag').allTextContents();
             const hasAction = genreTags.some(g => g.toLowerCase().includes('action'));
