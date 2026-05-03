@@ -56,21 +56,19 @@ test.describe('PC Games Tracker — UI Tests', () => {
     });
 
     // Sorting Tests
-    test('Sort by Name A-Z is default', async ({ page }) => {
-    const names = await page.locator('.game-card h3').allTextContents();
-    // This week games always appear first, so we skip them and check the rest
-    const allGames = await page.evaluate(async () => {
-        const response = await fetch('/api/games?sort=name');
-        return await response.json();
-    });
-    const nonThisWeek = names.filter((_, i) => {
-        const game = allGames[i];
-        if (!game) return false;
-        const diff = Math.ceil((new Date(game.release_date) - new Date()) / (1000 * 60 * 60 * 24));
-        return !(diff >= 0 && diff <= 7);
-    });
-    const sorted = [...nonThisWeek].sort((a, b) => a.localeCompare(b));
-    expect(nonThisWeek).toEqual(sorted);
+test('Sort by Name A-Z is default', async ({ page }) => {
+    // Get all card names
+    const allNames = await page.locator('.game-card h3').allTextContents();
+    
+    // Skip "this week" cards (they have the .new-badge)
+    const thisWeekCount = await page.locator('.new-badge').count();
+    
+    // Get only the non-this-week names
+    const nonThisWeekNames = allNames.slice(thisWeekCount);
+    
+    // Verify they are sorted A-Z
+    const sorted = [...nonThisWeekNames].sort((a, b) => a.localeCompare(b));
+    expect(nonThisWeekNames).toEqual(sorted);
 });
 
     test('Sort by Release Date works', async ({ page }) => {
