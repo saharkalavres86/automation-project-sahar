@@ -52,6 +52,74 @@ function playSound(type) {
     }
 }
 
+// ─── BACKGROUND MUSIC ────────────────────────────────────
+let musicPlaying = false;
+let musicNodes = [];
+
+function startArcadeMusic() {
+    if (musicPlaying) return;
+    musicPlaying = true;
+
+    const melody = [
+        [523, 0.2], [659, 0.2], [784, 0.2], [1047, 0.4],
+        [784, 0.2], [659, 0.2], [523, 0.4],
+        [392, 0.2], [523, 0.2], [659, 0.2], [784, 0.4],
+        [659, 0.2], [523, 0.2], [392, 0.4],
+        [440, 0.2], [554, 0.2], [659, 0.2], [880, 0.4],
+        [659, 0.2], [554, 0.2], [440, 0.4],
+        [392, 0.2], [494, 0.2], [587, 0.2], [784, 0.4],
+        [587, 0.2], [494, 0.2], [392, 0.6],
+    ];
+
+    let time = audioCtx.currentTime + 0.1;
+
+    function playMelodyLoop() {
+        melody.forEach(([freq, dur]) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(freq, time);
+            gain.gain.setValueAtTime(0.03, time);
+            gain.gain.exponentialRampToValueAtTime(0.001, time + dur - 0.02);
+            osc.start(time);
+            osc.stop(time + dur);
+            musicNodes.push(osc);
+            time += dur;
+        });
+
+        const loopDelay = (time - audioCtx.currentTime) * 1000;
+        setTimeout(() => {
+            if (musicPlaying) playMelodyLoop();
+        }, loopDelay);
+    }
+
+    playMelodyLoop();
+}
+
+function stopArcadeMusic() {
+    musicPlaying = false;
+    musicNodes.forEach(node => {
+        try { node.stop(); } catch(e) {}
+    });
+    musicNodes = [];
+}
+
+function toggleMusic() {
+    const btn = document.getElementById('music-btn');
+    if (musicPlaying) {
+        stopArcadeMusic();
+        btn.textContent = '🎵 PLAY MUSIC';
+        btn.style.background = 'linear-gradient(90deg, #ff3c78, #7828c8)';
+    } else {
+        audioCtx.resume();
+        startArcadeMusic();
+        btn.textContent = '🔇 STOP MUSIC';
+        btn.style.background = 'linear-gradient(90deg, #7828c8, #00c8ff)';
+    }
+}
+
 // ─── HELPERS ─────────────────────────────────────────────
 function formatDate(dateStr) {
     if (!dateStr) return 'TBA';
@@ -166,7 +234,7 @@ function displayGames(games) {
         card.style.animationDelay = `${index * 0.05}s`;
 
         const image = game.background_image
-            ? `<img src="${game.background_image}" alt="${game.name}" loading="lazy">`
+            ? `<img src="${game.background_image}" alt="${game.name}" loading="lazy" referrerpolicy="no-referrer">`
             : `<div class="no-image">🎮</div>`;
 
         const genres = game.genres
@@ -231,7 +299,7 @@ function openModal(game) {
 
     const screenshots = game.screenshots
         ? game.screenshots.split(',').map(s =>
-            `<img src="${s}" alt="screenshot" class="screenshot-img">`
+            `<img src="${s}" alt="screenshot" class="screenshot-img" referrerpolicy="no-referrer">`
           ).join('')
         : '';
 
@@ -241,7 +309,7 @@ function openModal(game) {
 
     overlay.innerHTML = `
         <div class="modal">
-            ${game.background_image ? `<img src="${game.background_image}" alt="${game.name}" class="modal-main-img">` : ''}
+            ${game.background_image ? `<img src="${game.background_image}" alt="${game.name}" class="modal-main-img" referrerpolicy="no-referrer">` : ''}
             <div class="modal-body">
                 <h2>${game.name}</h2>
                 ${isNewRelease(game.release_date) ? '<span class="new-badge" style="position:relative;top:0;left:0;display:inline-block;margin-bottom:0.8rem;">🔥 Releasing This Week!</span>' : ''}

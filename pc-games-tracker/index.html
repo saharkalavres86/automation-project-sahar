@@ -3,13 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
     <title>PC Games Tracker</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
     <header>
         <h1>🎮 Upcoming PC Games</h1>
         <p>Stay updated with the latest game releases</p>
+        <button id="music-btn" onclick="toggleMusic()" style="
+            margin-top: 1rem;
+            background: linear-gradient(90deg, #ff3c78, #7828c8);
+            border: none;
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            cursor: pointer;
+            letter-spacing: 1px;
+            box-shadow: 0 0 15px rgba(255, 60, 120, 0.5);
+            transition: all 0.3s;
+        ">🎵 PLAY MUSIC</button>
     </header>
 
     <div class="filters">
@@ -31,6 +47,7 @@
 
     <div id="loading" class="loading">Loading games...</div>
     <div id="games-grid" class="games-grid"></div>
+
     <script src="app.js"></script>
 </body>
 </html>
