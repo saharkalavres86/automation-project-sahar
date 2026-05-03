@@ -27,19 +27,9 @@ automation-project/
 │       ├── db.js               ← PostgreSQL connection
 │       ├── fetchGames.js       ← RAWG API fetcher
 │       └── tests/
-│           └── api.test.js     ← Jest API tests
-├── tests/                      ← Playwright UI tests
-│   ├── games_tracker.spec.js   ← Games tracker tests
-│   ├── lesson1.spec.js         ← Playwright basics
-│   ├── lesson2.spec.js         ← Page Object Model
-│   ├── lesson3.spec.js         ← Data Driven Testing
-│   ├── lesson4.spec.js         ← Fixtures
-│   └── final_project.spec.js   ← Final project
-├── pages/                      ← Page Object Model classes
-│   ├── LoginPage.js
-│   └── InventoryPage.js
-├── fixtures/
-│   └── base.js                 ← Custom Playwright fixtures
+│           └── api.test.js     ← Jest API tests (22 tests)
+├── tests/
+│   └── games_tracker.spec.js   ← Playwright UI tests (19 tests)
 └── .github/
     └── workflows/
         └── playwright.yml      ← GitHub Actions CI/CD
