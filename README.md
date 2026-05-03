@@ -120,15 +120,6 @@ automation-project/
 ✅ All games have a valid rawg_id
 ```
 
-### Saucedemo Playwright Tests (17 tests)
-- Login flows with multiple user types (Data-Driven Testing)
-- Cart management with Page Object Model
-- Full checkout flow end-to-end
-- Sorting and filtering validation
-- API reliability tests
-
----
-
 ## ⚙️ CI/CD Pipeline
 
 Every push to `main` automatically:
