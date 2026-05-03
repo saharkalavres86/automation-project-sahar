@@ -62,7 +62,9 @@ function displayGames(games) {
             ? game.genres.split(', ').map(g => `<span class="genre-tag">${g}</span>`).join('')
             : '';
 
-        const rating = game.rating ? `⭐ ${game.rating}/5` : 'No rating';
+        const rating = game.rating && game.rating > 0
+            ? `⭐ ${game.rating}/5`
+            : 'Not rated yet';
 
         card.innerHTML = `
             ${image}
@@ -93,11 +95,11 @@ function openModal(game) {
             ${game.background_image ? `<img src="${game.background_image}" alt="${game.name}">` : ''}
             <div class="modal-body">
                 <h2>${game.name}</h2>
-                <span class="release-date">📅 ${formatDate(game.release_date)}</span>
-                <p>⭐ <strong>Rating:</strong> ${game.rating || 'N/A'} / 5</p>
+                <p>📅 <strong>Release Date:</strong> ${formatDate(game.release_date)}</p>
+                <p>⭐ <strong>Rating:</strong> ${game.rating && game.rating > 0 ? game.rating + ' / 5' : 'Not rated yet'}</p>
                 <p>🎭 <strong>Genres:</strong> ${game.genres || 'N/A'}</p>
                 <p>🖥️ <strong>Platforms:</strong> ${game.platforms || 'N/A'}</p>
-                <p>🎮 <strong>Metacritic:</strong> ${game.metacritic || 'N/A'}</p>
+                <p>🎮 <strong>Metacritic:</strong> ${game.metacritic || 'Not rated yet'}</p>
             </div>
         </div>
     `;
