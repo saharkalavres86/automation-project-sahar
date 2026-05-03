@@ -101,6 +101,13 @@ function displayGames(games) {
         return;
     }
 
+    // Always show "this week" games first
+    games = [...games].sort((a, b) => {
+        const aNew = isNewRelease(a.release_date) ? 0 : 1;
+        const bNew = isNewRelease(b.release_date) ? 0 : 1;
+        return aNew - bNew;
+    });
+
     games.forEach((game, index) => {
         const card = document.createElement('div');
         card.className = 'game-card';
@@ -131,7 +138,7 @@ function displayGames(games) {
             <div class="game-info">
                 <div class="card-top">
                     <h3>${game.name}</h3>
-                    <button class="wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" 
+                    <button class="wishlist-btn ${isWishlisted ? 'wishlisted' : ''}"
                         title="${isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}">
                         ${isWishlisted ? '❤️' : '🔖'}
                     </button>
@@ -179,7 +186,7 @@ function openModal(game) {
             ${game.background_image ? `<img src="${game.background_image}" alt="${game.name}" class="modal-main-img">` : ''}
             <div class="modal-body">
                 <h2>${game.name}</h2>
-                ${isNewRelease(game.release_date) ? '<span class="new-badge">🔥 Releasing This Week!</span>' : ''}
+                ${isNewRelease(game.release_date) ? '<span class="new-badge" style="position:relative;top:0;left:0;display:inline-block;margin-bottom:0.5rem;">🔥 Releasing This Week!</span>' : ''}
                 <p>📅 <strong>Release Date:</strong> ${formatDate(game.release_date)}</p>
                 <p>⏳ <strong>Countdown:</strong> ${getCountdown(game.release_date) || 'TBA'}</p>
                 <p>⭐ <strong>Rating:</strong> ${game.rating && game.rating > 0 ? game.rating + ' / 5' : 'Not rated yet'}</p>
