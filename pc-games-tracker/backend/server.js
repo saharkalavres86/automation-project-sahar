@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
-import { createRequire } from 'module';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import pool from './db.js';
@@ -14,11 +13,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-// Serve frontend static files
 app.use(express.static(join(__dirname, '../')));
 
-// API routes
+// ─── GAMES ROUTES ────────────────────────────────────────
 app.get('/api/games', async (req, res) => {
     try {
         const { genre, sort, search } = req.query;
@@ -34,7 +31,7 @@ app.get('/api/games', async (req, res) => {
             query += ` AND genres ILIKE $${params.length}`;
         }
 
-        query += ` ORDER BY ${sort === 'rating' ? 'rating DESC' : sort === 'released' ? 'release_date ASC' : 'name ASC'}`;
+        query += ` ORDER BY ${sort === 'rating' ? 'rating DESC NULLS LAST' : sort === 'released' ? 'release_date ASC' : 'name ASC'}`;
 
         const result = await pool.query(query, params);
         res.json(result.rows);
@@ -63,29 +60,97 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
-// Serve index.html for root
+// ─── WISHLIST ROUTES ─────────────────────────────────────
+app.get('/api/wishlist', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM wishlist ORDER BY added_at DESC');
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/wishlist', async (req, res) => {
+    try {
+        const { rawg_id, name, release_date, rating, background_image, genres, platforms } = req.body;
+        await pool.query(`
+            INSERT INTO wishlist (rawg_id, name, release_date, rating, background_image, genres, platforms)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            ON CONFLICT (rawg_id) DO NOTHING
+        `, [rawg_id, name, release_date, rating, background_image, genres, platforms]);
+        res.json({ message: '✅ Added to wishlist' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/wishlist/:rawg_id', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM wishlist WHERE rawg_id = $1', [req.params.rawg_id]);
+        res.json({ message: '✅ Removed from wishlist' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ─── HEALTH CHECK ─────────────────────────────────────────
+app.get('/api/health', async (req, res) => {
+    try {
+        const db = await pool.query('SELECT COUNT(*) as total FROM games');
+        res.json({
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            games_in_db: db.rows[0].total
+        });
+    } catch (error) {
+        res.status(500).json({ status: 'unhealthy', error: error.message });
+    }
+});
+
+// ─── SERVE FRONTEND ───────────────────────────────────────
 app.get('/', (req, res) => {
     res.sendFile(join(__dirname, '../index.html'));
 });
 
-// Daily refresh at 08:00
+// ─── SCHEDULERS ───────────────────────────────────────────
+
+// Daily DB refresh at 08:00
 cron.schedule('0 8 * * *', async () => {
-    console.log('⏰ Running scheduled daily refresh...');
+    console.log('⏰ Running daily DB refresh at 08:00...');
     try {
         const count = await fetchAndSaveGames();
-        console.log(`✅ Scheduled refresh complete — ${count} games updated`);
+        console.log(`✅ Daily refresh complete — ${count} games updated`);
     } catch (error) {
-        console.error('❌ Scheduled refresh failed:', error.message);
+        console.error('❌ Daily refresh failed:', error.message);
+    }
+}, { timezone: 'Asia/Jerusalem' });
+
+// Midnight health check
+cron.schedule('0 0 * * *', async () => {
+    console.log('🏥 Running midnight health check...');
+    try {
+        const db = await pool.query('SELECT COUNT(*) as total FROM games');
+        const total = parseInt(db.rows[0].total);
+
+        if (total < 10) {
+            console.error(`❌ Health check FAILED — only ${total} games in DB, triggering refresh...`);
+            await fetchAndSaveGames();
+        } else {
+            console.log(`✅ Health check passed — ${total} games in DB`);
+        }
+    } catch (error) {
+        console.error('❌ Health check error:', error.message);
     }
 }, { timezone: 'Asia/Jerusalem' });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log('⏰ Daily refresh scheduled at 08:00');
+    console.log('🏥 Health check scheduled at midnight');
     try {
         await fetchAndSaveGames();
     } catch (error) {
         console.error('❌ Initial fetch failed:', error.message);
-        // Don't crash — server still runs
     }
 });

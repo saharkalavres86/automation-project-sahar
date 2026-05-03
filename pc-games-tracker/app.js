@@ -1,14 +1,33 @@
 const BASE_URL = '/api';
-
 let allGames = [];
+let wishlist = new Set();
 
+// ─── HELPERS ─────────────────────────────────────────────
 function formatDate(dateStr) {
     if (!dateStr) return 'TBA';
     return new Date(dateStr).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
+        year: 'numeric', month: 'short', day: 'numeric'
     });
+}
+
+function getCountdown(dateStr) {
+    if (!dateStr) return null;
+    const release = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.ceil((release - now) / (1000 * 60 * 60 * 24));
+    if (diff < 0) return 'Released';
+    if (diff === 0) return '🔥 Today!';
+    if (diff <= 7) return `🔥 ${diff} days left`;
+    if (diff <= 30) return `⏳ ${diff} days left`;
+    return `📅 ${diff} days left`;
+}
+
+function isNewRelease(dateStr) {
+    if (!dateStr) return false;
+    const release = new Date(dateStr);
+    const now = new Date();
+    const diff = Math.ceil((release - now) / (1000 * 60 * 60 * 24));
+    return diff >= 0 && diff <= 7;
 }
 
 function showSkeletons() {
@@ -23,9 +42,42 @@ function showSkeletons() {
     `).join('');
 }
 
+// ─── WISHLIST ────────────────────────────────────────────
+async function loadWishlist() {
+    try {
+        const response = await fetch(`${BASE_URL}/wishlist`);
+        const data = await response.json();
+        wishlist = new Set(data.map(g => g.rawg_id));
+    } catch (error) {
+        console.error('Failed to load wishlist:', error);
+    }
+}
+
+async function toggleWishlist(game, btn) {
+    const isWishlisted = wishlist.has(game.rawg_id);
+
+    if (isWishlisted) {
+        await fetch(`${BASE_URL}/wishlist/${game.rawg_id}`, { method: 'DELETE' });
+        wishlist.delete(game.rawg_id);
+        btn.textContent = '🔖';
+        btn.title = 'Add to Wishlist';
+        btn.classList.remove('wishlisted');
+    } else {
+        await fetch(`${BASE_URL}/wishlist`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(game)
+        });
+        wishlist.add(game.rawg_id);
+        btn.textContent = '❤️';
+        btn.title = 'Remove from Wishlist';
+        btn.classList.add('wishlisted');
+    }
+}
+
+// ─── FETCH GAMES ─────────────────────────────────────────
 async function fetchGames(genre = '', ordering = 'name') {
     showSkeletons();
-
     const params = new URLSearchParams({ sort: ordering });
     if (genre) params.append('genre', genre);
 
@@ -39,6 +91,7 @@ async function fetchGames(genre = '', ordering = 'name') {
     }
 }
 
+// ─── DISPLAY GAMES ───────────────────────────────────────
 function displayGames(games) {
     const grid = document.getElementById('games-grid');
     grid.innerHTML = '';
@@ -52,7 +105,6 @@ function displayGames(games) {
         const card = document.createElement('div');
         card.className = 'game-card';
         card.style.animationDelay = `${index * 0.05}s`;
-        card.onclick = () => openModal(game);
 
         const image = game.background_image
             ? `<img src="${game.background_image}" alt="${game.name}" loading="lazy">`
@@ -66,25 +118,57 @@ function displayGames(games) {
             ? `⭐ ${game.rating}/5`
             : 'Not rated yet';
 
+        const countdown = getCountdown(game.release_date);
+        const newBadge = isNewRelease(game.release_date)
+            ? `<span class="new-badge">🔥 This Week</span>`
+            : '';
+
+        const isWishlisted = wishlist.has(game.rawg_id);
+
         card.innerHTML = `
+            ${newBadge}
             ${image}
             <div class="game-info">
-                <h3>${game.name}</h3>
+                <div class="card-top">
+                    <h3>${game.name}</h3>
+                    <button class="wishlist-btn ${isWishlisted ? 'wishlisted' : ''}" 
+                        title="${isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}">
+                        ${isWishlisted ? '❤️' : '🔖'}
+                    </button>
+                </div>
                 <div class="game-meta">
                     <span class="release-date">📅 ${formatDate(game.release_date)}</span>
                     <span class="rating">${rating}</span>
                 </div>
+                <div class="countdown">${countdown || ''}</div>
                 <div class="genres">${genres}</div>
             </div>
         `;
+
+        // Wishlist button click
+        const wishlistBtn = card.querySelector('.wishlist-btn');
+        wishlistBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            toggleWishlist(game, wishlistBtn);
+        });
+
+        // Card click opens modal
+        card.addEventListener('click', () => openModal(game));
 
         grid.appendChild(card);
     });
 }
 
+// ─── MODAL ───────────────────────────────────────────────
 function openModal(game) {
     const existing = document.querySelector('.modal-overlay');
     if (existing) existing.remove();
+
+    const screenshots = game.screenshots
+        ? game.screenshots.split(',').map(s =>
+            `<img src="${s}" alt="screenshot" class="screenshot-img">`
+          ).join('')
+        : '';
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -92,14 +176,22 @@ function openModal(game) {
 
     overlay.innerHTML = `
         <div class="modal">
-            ${game.background_image ? `<img src="${game.background_image}" alt="${game.name}">` : ''}
+            ${game.background_image ? `<img src="${game.background_image}" alt="${game.name}" class="modal-main-img">` : ''}
             <div class="modal-body">
                 <h2>${game.name}</h2>
+                ${isNewRelease(game.release_date) ? '<span class="new-badge">🔥 Releasing This Week!</span>' : ''}
                 <p>📅 <strong>Release Date:</strong> ${formatDate(game.release_date)}</p>
+                <p>⏳ <strong>Countdown:</strong> ${getCountdown(game.release_date) || 'TBA'}</p>
                 <p>⭐ <strong>Rating:</strong> ${game.rating && game.rating > 0 ? game.rating + ' / 5' : 'Not rated yet'}</p>
                 <p>🎭 <strong>Genres:</strong> ${game.genres || 'N/A'}</p>
                 <p>🖥️ <strong>Platforms:</strong> ${game.platforms || 'N/A'}</p>
                 <p>🎮 <strong>Metacritic:</strong> ${game.metacritic || 'Not rated yet'}</p>
+                ${screenshots ? `
+                    <div class="screenshots-section">
+                        <h4>📸 Screenshots</h4>
+                        <div class="screenshots-grid">${screenshots}</div>
+                    </div>
+                ` : ''}
             </div>
         </div>
     `;
@@ -107,6 +199,7 @@ function openModal(game) {
     document.body.appendChild(overlay);
 }
 
+// ─── EVENT LISTENERS ─────────────────────────────────────
 document.getElementById('search').addEventListener('input', (e) => {
     const query = e.target.value.toLowerCase();
     const filtered = allGames.filter(g => g.name.toLowerCase().includes(query));
@@ -121,4 +214,10 @@ document.getElementById('genre').addEventListener('change', (e) => {
     fetchGames(e.target.value, document.getElementById('sort').value);
 });
 
-fetchGames();
+// ─── INIT ────────────────────────────────────────────────
+async function init() {
+    await loadWishlist();
+    await fetchGames();
+}
+
+init();
