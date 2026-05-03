@@ -475,3 +475,19 @@ header p {
     align-items: center;
     justify-content: center;
 }
+.lightbox-nav {
+    background: none;
+    border: none;
+    color: #ff3c78;
+    font-size: 5rem;
+    cursor: pointer;
+    padding: 0 1rem;
+    transition: transform 0.2s, color 0.2s;
+    z-index: 2001;
+    line-height: 1;
+}
+
+.lightbox-nav:hover {
+    transform: scale(1.2);
+    color: #00c8ff;
+}

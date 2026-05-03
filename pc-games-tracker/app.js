@@ -160,6 +160,46 @@ function showSkeletons() {
     `).join('');
 }
 
+// ─── LIGHTBOX ────────────────────────────────────────────
+function openLightbox(src, allScreenshots) {
+    const existing = document.querySelector('.lightbox-overlay');
+    if (existing) existing.remove();
+
+    let currentIndex = allScreenshots.indexOf(src);
+
+    function render() {
+        const lightbox = document.querySelector('.lightbox-overlay');
+        lightbox.querySelector('.lightbox-content img').src = allScreenshots[currentIndex];
+        lightbox.querySelector('.prev-btn').style.opacity = currentIndex === 0 ? '0.3' : '1';
+        lightbox.querySelector('.next-btn').style.opacity = currentIndex === allScreenshots.length - 1 ? '0.3' : '1';
+    }
+
+    const lightbox = document.createElement('div');
+    lightbox.className = 'lightbox-overlay';
+    lightbox.onclick = (e) => { if (e.target === lightbox) lightbox.remove(); };
+
+    lightbox.innerHTML = `
+        <button class="prev-btn lightbox-nav" onclick="event.stopPropagation()">&#8249;</button>
+        <div class="lightbox-content">
+            <img src="${src}" alt="screenshot" referrerpolicy="no-referrer">
+            <button class="lightbox-close" onclick="this.closest('.lightbox-overlay').remove()">✕</button>
+        </div>
+        <button class="next-btn lightbox-nav" onclick="event.stopPropagation()">&#8250;</button>
+    `;
+
+    lightbox.querySelector('.prev-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentIndex > 0) { currentIndex--; render(); }
+    });
+
+    lightbox.querySelector('.next-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentIndex < allScreenshots.length - 1) { currentIndex++; render(); }
+    });
+
+    document.body.appendChild(lightbox);
+}
+
 // ─── WISHLIST ────────────────────────────────────────────
 async function loadWishlist() {
     try {
@@ -272,17 +312,14 @@ function displayGames(games) {
             </div>
         `;
 
-        // Wishlist button click
         const wishlistBtn = card.querySelector('.wishlist-btn');
         wishlistBtn.addEventListener('click', (e) => {
             e.stopPropagation();
             toggleWishlist(game, wishlistBtn);
         });
 
-        // Card hover sound
         card.addEventListener('mouseenter', () => playSound('hover'));
 
-        // Card click opens modal
         card.addEventListener('click', () => {
             playSound('click');
             openModal(game);
@@ -297,11 +334,14 @@ function openModal(game) {
     const existing = document.querySelector('.modal-overlay');
     if (existing) existing.remove();
 
-const screenshots = game.screenshots
-    ? game.screenshots.split(',').map(s =>
-        `<img src="${s}" alt="screenshot" class="screenshot-img" referrerpolicy="no-referrer" onclick="openLightbox('${s}')">`
-      ).join('')
-    : '';
+    const screenshotList = game.screenshots ? game.screenshots.split(',') : [];
+
+    const screenshots = screenshotList.length > 0
+        ? screenshotList.map(s =>
+            `<img src="${s}" alt="screenshot" class="screenshot-img" referrerpolicy="no-referrer"
+            onclick="openLightbox('${s}', ${JSON.stringify(screenshotList)})">`
+          ).join('')
+        : '';
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
@@ -347,26 +387,6 @@ document.getElementById('sort').addEventListener('change', (e) => {
 document.getElementById('genre').addEventListener('change', (e) => {
     fetchGames(e.target.value, document.getElementById('sort').value);
 });
-
-// ─── LIGHTBOX ────────────────────────────────────────────
-function openLightbox(src) {
-    const existing = document.querySelector('.lightbox-overlay');
-    if (existing) existing.remove();
-
-    const lightbox = document.createElement('div');
-    lightbox.className = 'lightbox-overlay';
-    lightbox.onclick = () => lightbox.remove();
-
-    lightbox.innerHTML = `
-        <div class="lightbox-content">
-            <img src="${src}" alt="screenshot" referrerpolicy="no-referrer">
-            <button class="lightbox-close" onclick="this.closest('.lightbox-overlay').remove()">✕</button>
-        </div>
-    `;
-
-    document.body.appendChild(lightbox);
-}
-
 
 // ─── INIT ────────────────────────────────────────────────
 async function init() {
