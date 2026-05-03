@@ -2,6 +2,56 @@ const BASE_URL = '/api';
 let allGames = [];
 let wishlist = new Set();
 
+// ─── ARCADE SOUNDS ───────────────────────────────────────
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+const audioCtx = new AudioContext();
+
+function playSound(type) {
+    const oscillator = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    oscillator.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    if (type === 'hover') {
+        oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.1);
+        gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.1);
+    }
+
+    if (type === 'click') {
+        oscillator.frequency.setValueAtTime(880, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.15);
+        gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.15);
+    }
+
+    if (type === 'wishlist') {
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(523, audioCtx.currentTime);
+        oscillator.frequency.setValueAtTime(659, audioCtx.currentTime + 0.1);
+        oscillator.frequency.setValueAtTime(784, audioCtx.currentTime + 0.2);
+        gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.3);
+    }
+
+    if (type === 'search') {
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(600, audioCtx.currentTime + 0.08);
+        gainNode.gain.setValueAtTime(0.04, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.08);
+    }
+}
+
 // ─── HELPERS ─────────────────────────────────────────────
 function formatDate(dateStr) {
     if (!dateStr) return 'TBA';
@@ -73,6 +123,8 @@ async function toggleWishlist(game, btn) {
         btn.title = 'Remove from Wishlist';
         btn.classList.add('wishlisted');
     }
+
+    playSound('wishlist');
 }
 
 // ─── FETCH GAMES ─────────────────────────────────────────
@@ -159,8 +211,14 @@ function displayGames(games) {
             toggleWishlist(game, wishlistBtn);
         });
 
+        // Card hover sound
+        card.addEventListener('mouseenter', () => playSound('hover'));
+
         // Card click opens modal
-        card.addEventListener('click', () => openModal(game));
+        card.addEventListener('click', () => {
+            playSound('click');
+            openModal(game);
+        });
 
         grid.appendChild(card);
     });
@@ -186,7 +244,7 @@ function openModal(game) {
             ${game.background_image ? `<img src="${game.background_image}" alt="${game.name}" class="modal-main-img">` : ''}
             <div class="modal-body">
                 <h2>${game.name}</h2>
-                ${isNewRelease(game.release_date) ? '<span class="new-badge" style="position:relative;top:0;left:0;display:inline-block;margin-bottom:0.5rem;">🔥 Releasing This Week!</span>' : ''}
+                ${isNewRelease(game.release_date) ? '<span class="new-badge" style="position:relative;top:0;left:0;display:inline-block;margin-bottom:0.8rem;">🔥 Releasing This Week!</span>' : ''}
                 <p>📅 <strong>Release Date:</strong> ${formatDate(game.release_date)}</p>
                 <p>⏳ <strong>Countdown:</strong> ${getCountdown(game.release_date) || 'TBA'}</p>
                 <p>⭐ <strong>Rating:</strong> ${game.rating && game.rating > 0 ? game.rating + ' / 5' : 'Not rated yet'}</p>
@@ -195,7 +253,7 @@ function openModal(game) {
                 <p>🎮 <strong>Metacritic:</strong> ${game.metacritic || 'Not rated yet'}</p>
                 ${screenshots ? `
                     <div class="screenshots-section">
-                        <h4>📸 Screenshots</h4>
+                        <h4>📸 SCREENSHOTS</h4>
                         <div class="screenshots-grid">${screenshots}</div>
                     </div>
                 ` : ''}
@@ -208,6 +266,7 @@ function openModal(game) {
 
 // ─── EVENT LISTENERS ─────────────────────────────────────
 document.getElementById('search').addEventListener('input', (e) => {
+    playSound('search');
     const query = e.target.value.toLowerCase();
     const filtered = allGames.filter(g => g.name.toLowerCase().includes(query));
     displayGames(filtered);
