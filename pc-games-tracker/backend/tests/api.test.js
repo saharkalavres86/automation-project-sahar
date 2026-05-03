@@ -1,6 +1,5 @@
 import fetch from 'node-fetch';
-
-const BASE_URL = 'http://localhost:3000/api';
+const BASE_URL = 'https://automation-project-sahar-production.up.railway.app/api';
 
 describe('🎮 PC Games API — Content Reliability Tests', () => {
 
