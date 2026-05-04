@@ -207,7 +207,6 @@ async function loadWishlist() {
         const data = await response.json();
         wishlist = new Set(data.map(g => g.rawg_id));
 
-        // Update wishlist button count
         const btn = document.getElementById('wishlist-nav-btn');
         if (btn && data.length > 0) {
             btn.textContent = `🔖 MY WISHLIST (${data.length})`;
@@ -238,7 +237,6 @@ async function toggleWishlist(game, btn) {
         btn.classList.add('wishlisted');
     }
 
-    // Update wishlist button count
     const navBtn = document.getElementById('wishlist-nav-btn');
     if (navBtn) {
         const count = wishlist.size;
@@ -261,6 +259,17 @@ async function fetchGames(genre = '', ordering = 'name') {
     } catch (error) {
         document.getElementById('games-grid').innerHTML =
             '<p style="color:#888;text-align:center;grid-column:1/-1">Failed to load games.</p>';
+    }
+}
+
+// ─── FETCH GAME DESCRIPTION ──────────────────────────────
+async function fetchGameDescription(rawgId) {
+    try {
+        const response = await fetch(`${BASE_URL}/game/${rawgId}`);
+        const data = await response.json();
+        return data.description || null;
+    } catch {
+        return null;
     }
 }
 
@@ -348,7 +357,7 @@ function closeModal() {
     document.body.style.overflow = '';
 }
 
-function openModal(game) {
+async function openModal(game) {
     const existing = document.querySelector('.modal-overlay');
     if (existing) existing.remove();
 
@@ -382,6 +391,10 @@ function openModal(game) {
                 <p>🎭 <strong>Genres:</strong> ${game.genres || 'N/A'}</p>
                 <p>🖥️ <strong>Platforms:</strong> ${game.platforms || 'N/A'}</p>
                 <p>🎮 <strong>Metacritic:</strong> ${game.metacritic || 'Not rated yet'}</p>
+                <div id="game-description" style="margin-top:1rem;">
+                    <p><strong style="color:#00c8ff;">📖 Description:</strong></p>
+                    <p id="description-text" style="margin-top:0.5rem;color:#888;font-style:italic;font-size:0.9rem;line-height:1.7;">Loading description...</p>
+                </div>
                 ${screenshots ? `
                     <div class="screenshots-section">
                         <h4>📸 SCREENSHOTS</h4>
@@ -393,6 +406,15 @@ function openModal(game) {
     `;
 
     document.body.appendChild(overlay);
+
+    // Fetch description after modal is shown
+    const description = await fetchGameDescription(game.rawg_id);
+    const descEl = document.getElementById('description-text');
+    if (descEl) {
+        descEl.textContent = description || 'No description available.';
+        descEl.style.fontStyle = description ? 'normal' : 'italic';
+        descEl.style.color = description ? '#ccc' : '#666';
+    }
 
     overlay.querySelectorAll('.screenshot-img').forEach(img => {
         img.addEventListener('click', () => {

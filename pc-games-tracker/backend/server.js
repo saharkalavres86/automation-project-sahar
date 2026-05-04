@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import cron from 'node-cron';
+import fetch from 'node-fetch';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import pool from './db.js';
@@ -40,6 +41,20 @@ app.get('/api/games', async (req, res) => {
     }
 });
 
+// ─── SINGLE GAME DESCRIPTION ─────────────────────────────
+app.get('/api/game/:id', async (req, res) => {
+    try {
+        const API_KEY = process.env.RAWG_API_KEY;
+        const response = await fetch(`https://api.rawg.io/api/games/${req.params.id}?key=${API_KEY}`);
+        const data = await response.json();
+        const description = data.description_raw || data.description?.replace(/<[^>]*>/g, '') || null;
+        res.json({ description });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ─── REFRESH ROUTE ───────────────────────────────────────
 app.post('/api/refresh', async (req, res) => {
     try {
         const count = await fetchAndSaveGames();
@@ -49,6 +64,7 @@ app.post('/api/refresh', async (req, res) => {
     }
 });
 
+// ─── STATS ROUTE ─────────────────────────────────────────
 app.get('/api/stats', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -60,8 +76,18 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
-app.get('/wishlist', (req, res) => {
-    res.sendFile(join(__dirname, '../wishlist.html'));
+// ─── HEALTH CHECK ─────────────────────────────────────────
+app.get('/api/health', async (req, res) => {
+    try {
+        const db = await pool.query('SELECT COUNT(*) as total FROM games');
+        res.json({
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            games_in_db: db.rows[0].total
+        });
+    } catch (error) {
+        res.status(500).json({ status: 'unhealthy', error: error.message });
+    }
 });
 
 // ─── WISHLIST ROUTES ─────────────────────────────────────
@@ -97,28 +123,16 @@ app.delete('/api/wishlist/:rawg_id', async (req, res) => {
     }
 });
 
-// ─── HEALTH CHECK ─────────────────────────────────────────
-app.get('/api/health', async (req, res) => {
-    try {
-        const db = await pool.query('SELECT COUNT(*) as total FROM games');
-        res.json({
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            games_in_db: db.rows[0].total
-        });
-    } catch (error) {
-        res.status(500).json({ status: 'unhealthy', error: error.message });
-    }
+// ─── SERVE FRONTEND PAGES ────────────────────────────────
+app.get('/wishlist', (req, res) => {
+    res.sendFile(join(__dirname, '../wishlist.html'));
 });
 
-// ─── SERVE FRONTEND ───────────────────────────────────────
 app.get('/', (req, res) => {
     res.sendFile(join(__dirname, '../index.html'));
 });
 
 // ─── SCHEDULERS ───────────────────────────────────────────
-
-// Daily DB refresh at 08:00
 cron.schedule('0 8 * * *', async () => {
     console.log('⏰ Running daily DB refresh at 08:00...');
     try {
@@ -129,15 +143,13 @@ cron.schedule('0 8 * * *', async () => {
     }
 }, { timezone: 'Asia/Jerusalem' });
 
-// Midnight health check
 cron.schedule('0 0 * * *', async () => {
     console.log('🏥 Running midnight health check...');
     try {
         const db = await pool.query('SELECT COUNT(*) as total FROM games');
         const total = parseInt(db.rows[0].total);
-
         if (total < 10) {
-            console.error(`❌ Health check FAILED — only ${total} games in DB, triggering refresh...`);
+            console.error(`❌ Health check FAILED — only ${total} games, triggering refresh...`);
             await fetchAndSaveGames();
         } else {
             console.log(`✅ Health check passed — ${total} games in DB`);
@@ -147,6 +159,7 @@ cron.schedule('0 0 * * *', async () => {
     }
 }, { timezone: 'Asia/Jerusalem' });
 
+// ─── START SERVER ─────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
