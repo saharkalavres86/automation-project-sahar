@@ -206,6 +206,12 @@ async function loadWishlist() {
         const response = await fetch(`${BASE_URL}/wishlist`);
         const data = await response.json();
         wishlist = new Set(data.map(g => g.rawg_id));
+
+        // Update wishlist button count
+        const btn = document.getElementById('wishlist-nav-btn');
+        if (btn && data.length > 0) {
+            btn.textContent = `🔖 MY WISHLIST (${data.length})`;
+        }
     } catch (error) {
         console.error('Failed to load wishlist:', error);
     }
@@ -230,6 +236,13 @@ async function toggleWishlist(game, btn) {
         btn.textContent = '❤️';
         btn.title = 'Remove from Wishlist';
         btn.classList.add('wishlisted');
+    }
+
+    // Update wishlist button count
+    const navBtn = document.getElementById('wishlist-nav-btn');
+    if (navBtn) {
+        const count = wishlist.size;
+        navBtn.textContent = count > 0 ? `🔖 MY WISHLIST (${count})` : '🔖 MY WISHLIST';
     }
 
     playSound('wishlist');
