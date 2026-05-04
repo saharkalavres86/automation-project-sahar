@@ -60,6 +60,10 @@ app.get('/api/stats', async (req, res) => {
     }
 });
 
+app.get('/wishlist', (req, res) => {
+    res.sendFile(join(__dirname, '../wishlist.html'));
+});
+
 // ─── WISHLIST ROUTES ─────────────────────────────────────
 app.get('/api/wishlist', async (req, res) => {
     try {
