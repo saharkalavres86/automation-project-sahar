@@ -40,14 +40,12 @@ app.get('/api/games', async (req, res) => {
             : sort === 'released' ? 'release_date ASC'
             : 'name ASC';
 
-        // Count query
         const countResult = await pool.query(
             `SELECT COUNT(*) FROM games ${conditions}`,
             params
         );
         const total = parseInt(countResult.rows[0].count);
 
-        // Data query
         const dataParams = [...params, limit, offset];
         const result = await pool.query(
             `SELECT * FROM games ${conditions} ORDER BY ${orderBy} LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}`,
@@ -65,31 +63,6 @@ app.get('/api/games', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-// Pagination
-const page = parseInt(req.query.page) || 1;
-const limit = parseInt(req.query.limit) || 12;
-const offset = (page - 1) * limit;
-
-const countResult = await pool.query(query.replace('SELECT *', 'SELECT COUNT(*)'), params);
-const total = parseInt(countResult.rows[0].count);
-
-params.push(limit);
-query += ` LIMIT $${params.length}`;
-params.push(offset);
-query += ` OFFSET $${params.length}`;
-
-const result = await pool.query(query, params);
-res.json({
-    games: result.rows,
-    total,
-    page,
-    totalPages: Math.ceil(total / limit)
-});
-   
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
 
 // ─── SINGLE GAME DESCRIPTION ─────────────────────────────
 app.get('/api/game/:id', async (req, res) => {
@@ -98,10 +71,10 @@ app.get('/api/game/:id', async (req, res) => {
         const response = await fetch(`https://api.rawg.io/api/games/${req.params.id}?key=${API_KEY}`);
         const data = await response.json();
         const description = (data.description_raw || data.description?.replace(/<[^>]*>/g, '') || null)
-    ?.replace(/###/g, '\n')
-    ?.replace(/##/g, '\n')
-    ?.replace(/#/g, '')
-    ?.trim() || null;
+            ?.replace(/###/g, '\n')
+            ?.replace(/##/g, '\n')
+            ?.replace(/#/g, '')
+            ?.trim() || null;
         res.json({ description });
     } catch (error) {
         res.status(500).json({ error: error.message });
