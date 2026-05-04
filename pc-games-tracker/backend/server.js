@@ -47,7 +47,11 @@ app.get('/api/game/:id', async (req, res) => {
         const API_KEY = process.env.RAWG_API_KEY;
         const response = await fetch(`https://api.rawg.io/api/games/${req.params.id}?key=${API_KEY}`);
         const data = await response.json();
-        const description = data.description_raw || data.description?.replace(/<[^>]*>/g, '') || null;
+        const description = (data.description_raw || data.description?.replace(/<[^>]*>/g, '') || null)
+    ?.replace(/###/g, '\n')
+    ?.replace(/##/g, '\n')
+    ?.replace(/#/g, '')
+    ?.trim() || null;
         res.json({ description });
     } catch (error) {
         res.status(500).json({ error: error.message });
