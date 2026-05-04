@@ -1,6 +1,11 @@
 const BASE_URL = '/api';
 let allGames = [];
 let wishlist = new Set();
+let currentPage = 1;
+let totalPages = 1;
+let currentGenre = '';
+let currentSort = 'name';
+let currentSearch = '';
 
 // ─── ARCADE SOUNDS ───────────────────────────────────────
 const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -160,6 +165,15 @@ function showSkeletons() {
     `).join('');
 }
 
+function updateLoadMoreBtn(total) {
+    const btn = document.getElementById('load-more-btn');
+    const counter = document.getElementById('games-counter');
+    const showing = Math.min(currentPage * 12, total);
+
+    if (counter) counter.textContent = `Showing ${showing} of ${total} games`;
+    if (btn) btn.style.display = currentPage >= totalPages ? 'none' : 'inline-block';
+}
+
 // ─── LIGHTBOX ────────────────────────────────────────────
 function openLightbox(src, allScreenshots) {
     const existing = document.querySelector('.lightbox-overlay');
@@ -247,19 +261,135 @@ async function toggleWishlist(game, btn) {
 }
 
 // ─── FETCH GAMES ─────────────────────────────────────────
-async function fetchGames(genre = '', ordering = 'name') {
-    showSkeletons();
-    const params = new URLSearchParams({ sort: ordering });
+async function fetchGames(genre = '', ordering = 'name', page = 1, append = false) {
+    if (!append) {
+        showSkeletons();
+        allGames = [];
+        currentPage = 1;
+    }
+
+    currentGenre = genre;
+    currentSort = ordering;
+
+    const params = new URLSearchParams({ sort: ordering, page, limit: 12 });
     if (genre) params.append('genre', genre);
 
     try {
         const response = await fetch(`${BASE_URL}/games?${params}`);
-        allGames = await response.json();
-        displayGames(allGames);
+        const data = await response.json();
+
+        totalPages = data.totalPages;
+        currentPage = data.page;
+
+        const newGames = data.games;
+
+        // Sort — this week first
+        newGames.sort((a, b) => {
+            const aNew = isNewRelease(a.release_date) ? 0 : 1;
+            const bNew = isNewRelease(b.release_date) ? 0 : 1;
+            return aNew - bNew;
+        });
+
+        if (append) {
+            allGames = [...allGames, ...newGames];
+            appendGames(newGames);
+        } else {
+            allGames = newGames;
+            displayGames(newGames);
+        }
+
+        updateLoadMoreBtn(data.total);
+
     } catch (error) {
         document.getElementById('games-grid').innerHTML =
             '<p style="color:#888;text-align:center;grid-column:1/-1">Failed to load games.</p>';
     }
+}
+
+async function loadMore() {
+    await fetchGames(currentGenre, currentSort, currentPage + 1, true);
+}
+
+// ─── DISPLAY GAMES ───────────────────────────────────────
+function createGameCard(game, index) {
+    const card = document.createElement('div');
+    card.className = 'game-card';
+    card.style.animationDelay = `${index * 0.05}s`;
+
+    const image = game.background_image
+        ? `<img src="${game.background_image}" alt="${game.name}" loading="lazy" referrerpolicy="no-referrer">`
+        : `<div class="no-image">🎮</div>`;
+
+    const genres = game.genres
+        ? game.genres.split(', ').map(g => `<span class="genre-tag">${g}</span>`).join('')
+        : '';
+
+    const rating = game.rating && game.rating > 0
+        ? `⭐ ${game.rating}/5`
+        : 'Not rated yet';
+
+    const countdown = getCountdown(game.release_date);
+    const newBadge = isNewRelease(game.release_date)
+        ? `<span class="new-badge">🔥 This Week</span>`
+        : '';
+
+    const isWishlisted = wishlist.has(game.rawg_id);
+
+    card.innerHTML = `
+        ${newBadge}
+        ${image}
+        <div class="game-info">
+            <div class="card-top">
+                <h3>${game.name}</h3>
+                <button class="wishlist-btn ${isWishlisted ? 'wishlisted' : ''}"
+                    title="${isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}">
+                    ${isWishlisted ? '❤️' : '🔖'}
+                </button>
+            </div>
+            <div class="game-meta">
+                <span class="release-date">📅 ${formatDate(game.release_date)}</span>
+                <span class="rating">${rating}</span>
+            </div>
+            <div class="countdown">${countdown || ''}</div>
+            <div class="genres">${genres}</div>
+        </div>
+    `;
+
+    const wishlistBtn = card.querySelector('.wishlist-btn');
+    wishlistBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleWishlist(game, wishlistBtn);
+    });
+
+    card.addEventListener('mouseenter', () => playSound('hover'));
+    card.addEventListener('click', () => {
+        playSound('click');
+        openModal(game);
+    });
+
+    return card;
+}
+
+function displayGames(games) {
+    const grid = document.getElementById('games-grid');
+    grid.innerHTML = '';
+
+    if (games.length === 0) {
+        grid.innerHTML = '<p style="color:#888;text-align:center;grid-column:1/-1">No games found.</p>';
+        return;
+    }
+
+    games.forEach((game, index) => {
+        grid.appendChild(createGameCard(game, index));
+    });
+}
+
+function appendGames(games) {
+    const grid = document.getElementById('games-grid');
+    const startIndex = allGames.length - games.length;
+    games.forEach((game, index) => {
+        grid.appendChild(createGameCard(game, startIndex + index));
+    });
 }
 
 // ─── FETCH GAME DESCRIPTION ──────────────────────────────
@@ -271,83 +401,6 @@ async function fetchGameDescription(rawgId) {
     } catch {
         return null;
     }
-}
-
-// ─── DISPLAY GAMES ───────────────────────────────────────
-function displayGames(games) {
-    const grid = document.getElementById('games-grid');
-    grid.innerHTML = '';
-
-    if (games.length === 0) {
-        grid.innerHTML = '<p style="color:#888;text-align:center;grid-column:1/-1">No games found.</p>';
-        return;
-    }
-
-    games = [...games].sort((a, b) => {
-        const aNew = isNewRelease(a.release_date) ? 0 : 1;
-        const bNew = isNewRelease(b.release_date) ? 0 : 1;
-        return aNew - bNew;
-    });
-
-    games.forEach((game, index) => {
-        const card = document.createElement('div');
-        card.className = 'game-card';
-        card.style.animationDelay = `${index * 0.05}s`;
-
-        const image = game.background_image
-            ? `<img src="${game.background_image}" alt="${game.name}" loading="lazy" referrerpolicy="no-referrer">`
-            : `<div class="no-image">🎮</div>`;
-
-        const genres = game.genres
-            ? game.genres.split(', ').map(g => `<span class="genre-tag">${g}</span>`).join('')
-            : '';
-
-        const rating = game.rating && game.rating > 0
-            ? `⭐ ${game.rating}/5`
-            : 'Not rated yet';
-
-        const countdown = getCountdown(game.release_date);
-        const newBadge = isNewRelease(game.release_date)
-            ? `<span class="new-badge">🔥 This Week</span>`
-            : '';
-
-        const isWishlisted = wishlist.has(game.rawg_id);
-
-        card.innerHTML = `
-            ${newBadge}
-            ${image}
-            <div class="game-info">
-                <div class="card-top">
-                    <h3>${game.name}</h3>
-                    <button class="wishlist-btn ${isWishlisted ? 'wishlisted' : ''}"
-                        title="${isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}">
-                        ${isWishlisted ? '❤️' : '🔖'}
-                    </button>
-                </div>
-                <div class="game-meta">
-                    <span class="release-date">📅 ${formatDate(game.release_date)}</span>
-                    <span class="rating">${rating}</span>
-                </div>
-                <div class="countdown">${countdown || ''}</div>
-                <div class="genres">${genres}</div>
-            </div>
-        `;
-
-        const wishlistBtn = card.querySelector('.wishlist-btn');
-        wishlistBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleWishlist(game, wishlistBtn);
-        });
-
-        card.addEventListener('mouseenter', () => playSound('hover'));
-
-        card.addEventListener('click', () => {
-            playSound('click');
-            openModal(game);
-        });
-
-        grid.appendChild(card);
-    });
 }
 
 // ─── MODAL ───────────────────────────────────────────────
@@ -374,9 +427,7 @@ async function openModal(game) {
 
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
-    overlay.onclick = (e) => {
-        if (e.target === overlay) closeModal();
-    };
+    overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
 
     overlay.innerHTML = `
         <div class="modal">
@@ -407,7 +458,6 @@ async function openModal(game) {
 
     document.body.appendChild(overlay);
 
-    // Fetch description after modal is shown
     const description = await fetchGameDescription(game.rawg_id);
     const descEl = document.getElementById('description-text');
     if (descEl) {
@@ -429,8 +479,15 @@ async function openModal(game) {
 document.getElementById('search').addEventListener('input', (e) => {
     playSound('search');
     const query = e.target.value.toLowerCase();
+    currentSearch = query;
     const filtered = allGames.filter(g => g.name.toLowerCase().includes(query));
     displayGames(filtered);
+
+    // Hide load more during search
+    const btn = document.getElementById('load-more-btn');
+    const counter = document.getElementById('games-counter');
+    if (btn) btn.style.display = query ? 'none' : (currentPage >= totalPages ? 'none' : 'inline-block');
+    if (counter) counter.textContent = query ? `Found ${filtered.length} games` : '';
 });
 
 document.getElementById('sort').addEventListener('change', (e) => {

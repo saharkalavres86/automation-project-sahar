@@ -31,11 +31,29 @@ app.get('/api/games', async (req, res) => {
             params.push(`%${genre}%`);
             query += ` AND genres ILIKE $${params.length}`;
         }
+query += ` ORDER BY ${sort === 'rating' ? 'rating DESC NULLS LAST' : sort === 'released' ? 'release_date ASC' : 'name ASC'}`;
 
-        query += ` ORDER BY ${sort === 'rating' ? 'rating DESC NULLS LAST' : sort === 'released' ? 'release_date ASC' : 'name ASC'}`;
+// Pagination
+const page = parseInt(req.query.page) || 1;
+const limit = parseInt(req.query.limit) || 12;
+const offset = (page - 1) * limit;
 
-        const result = await pool.query(query, params);
-        res.json(result.rows);
+const countResult = await pool.query(query.replace('SELECT *', 'SELECT COUNT(*)'), params);
+const total = parseInt(countResult.rows[0].count);
+
+params.push(limit);
+query += ` LIMIT $${params.length}`;
+params.push(offset);
+query += ` OFFSET $${params.length}`;
+
+const result = await pool.query(query, params);
+res.json({
+    games: result.rows,
+    total,
+    page,
+    totalPages: Math.ceil(total / limit)
+});
+   
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
