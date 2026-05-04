@@ -20,19 +20,51 @@ app.use(express.static(join(__dirname, '../')));
 app.get('/api/games', async (req, res) => {
     try {
         const { genre, sort, search } = req.query;
-        let query = 'SELECT * FROM games WHERE 1=1';
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 12;
+        const offset = (page - 1) * limit;
+
+        let conditions = 'WHERE 1=1';
         const params = [];
 
         if (search) {
             params.push(`%${search}%`);
-            query += ` AND name ILIKE $${params.length}`;
+            conditions += ` AND name ILIKE $${params.length}`;
         }
         if (genre) {
             params.push(`%${genre}%`);
-            query += ` AND genres ILIKE $${params.length}`;
+            conditions += ` AND genres ILIKE $${params.length}`;
         }
-query += ` ORDER BY ${sort === 'rating' ? 'rating DESC NULLS LAST' : sort === 'released' ? 'release_date ASC' : 'name ASC'}`;
 
+        const orderBy = sort === 'rating' ? 'rating DESC NULLS LAST'
+            : sort === 'released' ? 'release_date ASC'
+            : 'name ASC';
+
+        // Count query
+        const countResult = await pool.query(
+            `SELECT COUNT(*) FROM games ${conditions}`,
+            params
+        );
+        const total = parseInt(countResult.rows[0].count);
+
+        // Data query
+        const dataParams = [...params, limit, offset];
+        const result = await pool.query(
+            `SELECT * FROM games ${conditions} ORDER BY ${orderBy} LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}`,
+            dataParams
+        );
+
+        res.json({
+            games: result.rows,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
+        });
+
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 // Pagination
 const page = parseInt(req.query.page) || 1;
 const limit = parseInt(req.query.limit) || 12;
