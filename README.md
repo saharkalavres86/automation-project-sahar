@@ -54,16 +54,23 @@ automation-project/
 
 ## ✨ App Features
 
+## ✨ App Features
+
 - 🎮 **Live game listings** — upcoming PC games fetched from RAWG API
 - 🔥 **This Week badge** — games releasing within 7 days always shown first
 - ⏳ **Countdown timer** — days remaining until each game releases
 - 🔖 **Wishlist** — save favorite games, persisted in PostgreSQL
+- 📄 **Wishlist page** — dedicated page to view and manage saved games
+- 📖 **Game descriptions** — full game description fetched from RAWG on click
 - 📸 **Screenshots gallery** — view game screenshots inside the modal
+- 🖼️ **Lightbox** — full screen screenshot viewer with navigation arrows
 - 🎨 **Arcade UI theme** — animated cards, glowing effects, custom fonts
 - 🔊 **Sound effects** — arcade sounds on hover, click and wishlist
 - 🎵 **Background music** — retro arcade melody toggle
 - 🔍 **Search** — filter games by name in real time
 - 🎛️ **Sort & Filter** — by name, release date, rating, and genre
+- 📱 **Mobile responsive** — works on all screen sizes
+- 🚫 **Scroll lock** — background scroll disabled when modal is open
 - 🔄 **Daily auto-refresh** — DB updates every day at 08:00 (Israel time)
 - 🏥 **Midnight health check** — auto-triggers refresh if DB has less than 10 games
 
