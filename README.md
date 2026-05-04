@@ -73,6 +73,7 @@ automation-project/
 - 🚫 **Scroll lock** — background scroll disabled when modal is open
 - 🔄 **Daily auto-refresh** — DB updates every day at 08:00 (Israel time)
 - 🏥 **Midnight health check** — auto-triggers refresh if DB has less than 10 games
+- ⬇️ **Load More pagination** — loads 12 games at a time with a counter showing total
 
 ---
 
