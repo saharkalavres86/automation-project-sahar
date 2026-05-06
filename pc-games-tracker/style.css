@@ -628,3 +628,24 @@ header p {
         padding: 0.8rem 1rem;
     }
 }
+
+/* Fix card height consistency */
+.game-info h3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.4rem;
+}
+
+/* Make "Not rated yet" more subtle */
+.rating {
+    font-size: 0.75rem;
+    color: #555;
+    font-weight: 400;
+}
+
+/* Reduce filter padding */
+.filters {
+    padding: 1rem 1.5rem;
+}
