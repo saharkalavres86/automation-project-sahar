@@ -1,6 +1,7 @@
 const BASE_URL = '/api';
 let allGames = [];
 let wishlist = new Set();
+let recentlyViewed = [];
 let currentPage = 1;
 let totalPages = 1;
 let currentGenre = '';
@@ -260,6 +261,61 @@ async function toggleWishlist(game, btn) {
     playSound('wishlist');
 }
 
+// ─── RECENTLY VIEWED ─────────────────────────────────────
+function addToRecentlyViewed(game) {
+    recentlyViewed = recentlyViewed.filter(g => g.rawg_id !== game.rawg_id);
+    recentlyViewed.unshift(game);
+    recentlyViewed = recentlyViewed.slice(0, 5);
+    renderRecentlyViewed();
+}
+
+function renderRecentlyViewed() {
+    let container = document.getElementById('recently-viewed');
+    if (!container) return;
+
+    if (recentlyViewed.length === 0) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+    container.innerHTML = `
+        <h3 style="
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            color: #00c8ff;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            padding: 0 2rem;
+        ">🕐 RECENTLY VIEWED</h3>
+        <div style="display:flex;gap:1rem;padding:0 2rem;overflow-x:auto;padding-bottom:1rem;">
+            ${recentlyViewed.map(game => `
+                <div onclick="openModal(${JSON.stringify(game).replace(/"/g, '&quot;')})" style="
+                    flex-shrink: 0;
+                    width: 120px;
+                    cursor: pointer;
+                    transition: transform 0.2s;
+                " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                    <img src="${game.background_image || ''}" 
+                        referrerpolicy="no-referrer"
+                        style="width:120px;height:70px;object-fit:cover;border-radius:8px;border:1px solid #7828c8;"
+                        onerror="this.style.display='none'">
+                    <p style="
+                        font-size:0.7rem;
+                        color:#ccc;
+                        margin-top:0.3rem;
+                        white-space:nowrap;
+                        overflow:hidden;
+                        text-overflow:ellipsis;
+                        font-family:'Rajdhani',sans-serif;
+                        font-weight:600;
+                    ">${game.name}</p>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
 // ─── FETCH GAMES ─────────────────────────────────────────
 async function fetchGames(genre = '', ordering = 'name', page = 1, append = false) {
     if (!append) {
@@ -361,11 +417,11 @@ function createGameCard(game, index) {
         toggleWishlist(game, wishlistBtn);
     });
 
-    card.addEventListener('mouseenter', () => playSound('hover'));
-    card.addEventListener('click', () => {
-        playSound('click');
-        openModal(game);
-    });
+card.addEventListener('click', () => {
+    playSound('click');
+    addToRecentlyViewed(game);
+    openModal(game);
+});
 
     return card;
 }
