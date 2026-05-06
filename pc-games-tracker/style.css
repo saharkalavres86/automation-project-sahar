@@ -631,18 +631,17 @@ header p {
 
 /* Fix card height consistency */
 .game-info h3 {
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
+    white-space: nowrap;
     overflow: hidden;
-    min-height: 2.4rem;
+    text-overflow: ellipsis;
 }
 
 /* Make "Not rated yet" more subtle */
 .rating {
-    font-size: 0.75rem;
-    color: #555;
-    font-weight: 400;
+   font-size: 0.8rem;
+    color: #f4c430;
+    font-weight: 600;
+    font-style: normal;
 }
 
 /* Reduce filter padding */

@@ -324,9 +324,9 @@ function createGameCard(game, index) {
         ? game.genres.split(', ').map(g => `<span class="genre-tag">${g}</span>`).join('')
         : '';
 
-    const rating = game.rating && game.rating > 0
-        ? `⭐ ${game.rating}/5`
-        : 'Not rated yet';
+  const rating = game.rating && game.rating > 0
+    ? `⭐ ${game.rating}/5`
+    : `<span style="color:#444;font-size:0.72rem;font-style:italic;">Not rated yet</span>`;
 
     const countdown = getCountdown(game.release_date);
     const newBadge = isNewRelease(game.release_date)
