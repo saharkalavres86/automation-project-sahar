@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 const BASE_URL = 'https://automation-project-sahar-production.up.railway.app';
 
-test.describe('PC Games Tracker — UI Tests', () => {
+test.describe('Games Tracker — UI Tests', () => {
 
     test.beforeEach(async ({ page }) => {
         await page.goto(BASE_URL);
@@ -17,7 +17,7 @@ test.describe('PC Games Tracker — UI Tests', () => {
     });
 
     test('Page title is correct', async ({ page }) => {
-        await expect(page).toHaveTitle('PC Games Tracker');
+        await expect(page).toHaveTitle('Games Tracker');
     });
 
     test('Header displays correctly', async ({ page }) => {
