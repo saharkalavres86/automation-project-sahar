@@ -459,6 +459,17 @@ async function fetchGameDescription(rawgId) {
     }
 }
 
+// ─── FETCH GAME TRAILER ──────────────────────────────────
+async function fetchGameTrailer(rawgId) {
+    try {
+        const response = await fetch(`${BASE_URL}/game/${rawgId}/trailer`);
+        const data = await response.json();
+        return data.trailer || null;
+    } catch {
+        return null;
+    }
+}
+
 // ─── MODAL ───────────────────────────────────────────────
 function closeModal() {
     const overlay = document.querySelector('.modal-overlay');
@@ -502,6 +513,7 @@ async function openModal(game) {
                     <p><strong style="color:#00c8ff;">📖 Description:</strong></p>
                     <p id="description-text" style="margin-top:0.5rem;color:#888;font-style:italic;font-size:0.9rem;line-height:1.7;">Loading description...</p>
                 </div>
+                <div id="game-trailer"></div>
                 ${screenshots ? `
                     <div class="screenshots-section">
                         <h4>📸 SCREENSHOTS</h4>
@@ -514,13 +526,27 @@ async function openModal(game) {
 
     document.body.appendChild(overlay);
 
-    const description = await fetchGameDescription(game.rawg_id);
-    const descEl = document.getElementById('description-text');
-    if (descEl) {
-        descEl.textContent = description || 'No description available.';
-        descEl.style.fontStyle = description ? 'normal' : 'italic';
-        descEl.style.color = description ? '#ccc' : '#666';
-    }
+  const [description, trailer] = await Promise.all([
+    fetchGameDescription(game.rawg_id),
+    fetchGameTrailer(game.rawg_id)
+]);
+
+const descEl = document.getElementById('description-text');
+if (descEl) {
+    descEl.textContent = description || 'No description available.';
+    descEl.style.fontStyle = description ? 'normal' : 'italic';
+    descEl.style.color = description ? '#ccc' : '#666';
+}
+
+const trailerEl = document.getElementById('game-trailer');
+if (trailerEl && trailer) {
+    trailerEl.innerHTML = `
+        <div style="margin-top:1rem;border-top:1px solid rgba(120,40,200,0.3);padding-top:1rem;">
+            <p style="color:#00c8ff;font-family:'Orbitron',sans-serif;font-size:0.85rem;letter-spacing:1px;margin-bottom:0.8rem;">🎬 TRAILER</p>
+            <video controls style="width:100%;border-radius:8px;border:1px solid #7828c8;" src="${trailer}"></video>
+        </div>
+    `;
+}
 
     overlay.querySelectorAll('.screenshot-img').forEach(img => {
         img.addEventListener('click', () => {

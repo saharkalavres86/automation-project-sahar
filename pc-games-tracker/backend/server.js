@@ -81,6 +81,33 @@ app.get('/api/game/:id', async (req, res) => {
     }
 });
 
+// ─── GAME TRAILER ─────────────────────────────────────────
+app.get('/api/game/:id/trailer', async (req, res) => {
+    try {
+        const API_KEY = process.env.RAWG_API_KEY;
+        const response = await fetch(`https://api.rawg.io/api/games/${req.params.id}/movies?key=${API_KEY}`);
+        const data = await response.json();
+        const trailer = data.results?.[0]?.data?.max || null;
+        res.json({ trailer });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ─── REFRESH ROUTE ───────────────────────────────────────
 app.post('/api/refresh', async (req, res) => {
     try {
