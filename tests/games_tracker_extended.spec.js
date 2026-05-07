@@ -187,25 +187,25 @@ test.describe('PC Games Tracker — Extended Tests', () => {
             await page.waitForSelector('.game-card', { timeout: 15000 });
         });
 
-        test('Clicking screenshot opens lightbox', async ({ page }) => {
-            // Find a card with screenshots
-            const cards = page.locator('.game-card');
-            const count = await cards.count();
+test('Clicking screenshot opens lightbox', async ({ page }) => {
+    const cards = page.locator('.game-card');
+    const count = await cards.count();
 
-            for (let i = 0; i < count; i++) {
-                await cards.nth(i).click();
-                await page.waitForTimeout(2000);
-                const screenshots = page.locator('.screenshot-img');
-                const screenshotCount = await screenshots.count();
-                if (screenshotCount > 0) {
-                    await screenshots.first().click();
-                    await expect(page.locator('.lightbox-overlay')).toBeVisible();
-                    return;
-                }
-                await page.keyboard.press('Escape');
-                await page.waitForTimeout(300);
-            }
-        });
+    for (let i = 0; i < count; i++) {
+        await cards.nth(i).click();
+        await page.waitForTimeout(3000); // wait for screenshots to load
+        const screenshots = page.locator('.screenshot-img');
+        const screenshotCount = await screenshots.count();
+        if (screenshotCount > 0) {
+            await screenshots.first().click();
+            await page.waitForTimeout(1000);
+            await expect(page.locator('.lightbox-overlay')).toBeVisible();
+            return;
+        }
+        await page.locator('.modal-close-btn').click();
+        await page.waitForTimeout(500);
+    }
+});
 
   test('Lightbox has navigation buttons', async ({ page }) => {
     const cards = page.locator('.game-card');
