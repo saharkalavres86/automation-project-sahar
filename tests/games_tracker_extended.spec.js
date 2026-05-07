@@ -207,24 +207,25 @@ test('Clicking screenshot opens lightbox', async ({ page }) => {
     }
 });
 
-  test('Lightbox has navigation buttons', async ({ page }) => {
+test('Lightbox has navigation buttons', async ({ page }) => {
     const cards = page.locator('.game-card');
     const count = await cards.count();
 
     for (let i = 0; i < count; i++) {
         await cards.nth(i).click();
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(3000);
         const screenshots = page.locator('.screenshot-img');
         const screenshotCount = await screenshots.count();
         if (screenshotCount > 0) {
             await screenshots.first().click();
+            await page.waitForTimeout(1000);
             await expect(page.locator('.lightbox-overlay')).toBeVisible();
             await expect(page.locator('.prev-btn')).toBeVisible();
             await expect(page.locator('.next-btn')).toBeVisible();
             return;
         }
         await page.locator('.modal-close-btn').click();
-        await page.waitForTimeout(300);
+        await page.waitForTimeout(500);
     }
 });
 
