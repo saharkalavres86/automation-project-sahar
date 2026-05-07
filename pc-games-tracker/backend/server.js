@@ -257,3 +257,22 @@ app.listen(PORT, async () => {
         console.error('❌ Initial fetch failed:', error.message);
     }
 });
+
+// ─── TEST EMAIL ALERT ─────────────────────────────────────
+app.post('/api/test-alert', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const games = await pool.query(`
+            SELECT * FROM wishlist LIMIT 3
+        `);
+        
+        if (games.rows.length === 0) {
+            return res.json({ message: 'No games in wishlist to test with' });
+        }
+
+        await sendReleaseAlert(email, games.rows);
+        res.json({ message: `✅ Test alert sent to ${email}` });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
