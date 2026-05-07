@@ -1,3 +1,4 @@
+import { sendReleaseAlert } from './emailService.js';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -59,6 +60,33 @@ app.get('/api/games', async (req, res) => {
             totalPages: Math.ceil(total / limit)
         });
 
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ─── EMAIL SUBSCRIPTION ──────────────────────────────────
+app.post('/api/subscribe', async (req, res) => {
+    try {
+        const { email } = req.body;
+        if (!email) return res.status(400).json({ error: 'Email required' });
+
+        await pool.query(`
+            INSERT INTO subscribers (email)
+            VALUES ($1)
+            ON CONFLICT (email) DO NOTHING
+        `, [email]);
+
+        res.json({ message: '✅ Subscribed successfully!' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/subscribe/:email', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM subscribers WHERE email = $1', [req.params.email]);
+        res.json({ message: '✅ Unsubscribed successfully!' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -188,28 +216,32 @@ app.get('/', (req, res) => {
 
 // ─── SCHEDULERS ───────────────────────────────────────────
 cron.schedule('0 8 * * *', async () => {
-    console.log('⏰ Running daily DB refresh at 08:00...');
+    console.log('⏰ Running daily DB refresh and release alerts at 08:00...');
     try {
         const count = await fetchAndSaveGames();
         console.log(`✅ Daily refresh complete — ${count} games updated`);
+
+        // Send release alerts
+        const subscribers = await pool.query('SELECT email FROM subscribers');
+        
+        for (const subscriber of subscribers.rows) {
+            try {
+                // Find wishlisted games releasing within 3 days
+                const upcomingGames = await pool.query(`
+                    SELECT w.* FROM wishlist w
+                    WHERE w.release_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days'
+                `);
+
+                if (upcomingGames.rows.length > 0) {
+                    await sendReleaseAlert(subscriber.email, upcomingGames.rows);
+                }
+            } catch (emailError) {
+                console.error(`❌ Failed to send alert to ${subscriber.email}:`, emailError.message);
+            }
+        }
+
     } catch (error) {
         console.error('❌ Daily refresh failed:', error.message);
-    }
-}, { timezone: 'Asia/Jerusalem' });
-
-cron.schedule('0 0 * * *', async () => {
-    console.log('🏥 Running midnight health check...');
-    try {
-        const db = await pool.query('SELECT COUNT(*) as total FROM games');
-        const total = parseInt(db.rows[0].total);
-        if (total < 10) {
-            console.error(`❌ Health check FAILED — only ${total} games, triggering refresh...`);
-            await fetchAndSaveGames();
-        } else {
-            console.log(`✅ Health check passed — ${total} games in DB`);
-        }
-    } catch (error) {
-        console.error('❌ Health check error:', error.message);
     }
 }, { timezone: 'Asia/Jerusalem' });
 
