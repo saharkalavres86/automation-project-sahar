@@ -55,12 +55,13 @@ export async function sendReleaseAlert(email, games) {
         </html>
     `;
 
-    await resend.emails.send({
+    const result = await resend.emails.send({
         from: 'Games Tracker <onboarding@resend.dev>',
         to: email,
         subject: `🔥 ${games.length} game${games.length > 1 ? 's' : ''} from your wishlist releasing soon!`,
         html
     });
 
+    console.log('Resend result:', JSON.stringify(result));
     console.log(`✅ Release alert sent to ${email}`);
 }
