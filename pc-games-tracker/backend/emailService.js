@@ -1,14 +1,6 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
-const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendReleaseAlert(email, games) {
     const gamesList = games.map(game => {
@@ -63,8 +55,8 @@ export async function sendReleaseAlert(email, games) {
         </html>
     `;
 
-    await transporter.sendMail({
-        from: `"🎮 Games Tracker" <${process.env.EMAIL_USER}>`,
+    await resend.emails.send({
+        from: 'Games Tracker <onboarding@resend.dev>',
         to: email,
         subject: `🔥 ${games.length} game${games.length > 1 ? 's' : ''} from your wishlist releasing soon!`,
         html
