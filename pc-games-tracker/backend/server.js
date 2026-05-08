@@ -276,3 +276,20 @@ app.post('/api/test-alert', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+app.post('/api/test-alert', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const games = await pool.query(`SELECT * FROM wishlist LIMIT 3`);
+        
+        if (games.rows.length === 0) {
+            return res.json({ message: 'No games in wishlist to test with' });
+        }
+
+        await sendReleaseAlert(email, games.rows);
+        res.json({ message: `✅ Test alert sent to ${email}` });
+    } catch (error) {
+        console.error('❌ test-alert error:', error); // <-- ADD THIS
+        res.status(500).json({ error: error.message, stack: error.stack });
+    }
+});
