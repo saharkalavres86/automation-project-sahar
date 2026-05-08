@@ -11,7 +11,8 @@
     "express": "^4.22.1",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.7",
-    "pg": "^8.20.0"
+    "pg": "^8.20.0",
+    "resend": "^6.12.3"
   },
   "devDependencies": {
     "jest": "^30.3.0",
