@@ -292,4 +292,5 @@ app.post('/api/test-alert', async (req, res) => {
         console.error('❌ test-alert error:', error); // <-- ADD THIS
         res.status(500).json({ error: error.message, stack: error.stack });
     }
+    
 });
