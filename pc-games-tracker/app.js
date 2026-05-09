@@ -2,6 +2,7 @@ const BASE_URL = '/api';
 let allGames = [];
 let wishlist = new Set();
 let userGameStatuses = new Map();
+let userRatings = new Map();
 let recentlyViewed = [];
 let currentPage = 1;
 let totalPages = 1;
@@ -305,6 +306,62 @@ async function loadUserGameStatuses() {
     } catch {}
 }
 
+// ─── USER RATINGS ─────────────────────────────────────────
+async function loadUserRatings() {
+    if (!isLoggedIn()) return;
+    try {
+        const res = await fetch(`${BASE_URL}/ratings`, { headers: authHeaders() });
+        const data = await res.json();
+        userRatings = new Map(data.map(r => [r.rawg_id, r.rating]));
+    } catch {}
+}
+
+function hoverStars(rawg_id, value) {
+    const stars = document.querySelectorAll(`#stars-${rawg_id} span`);
+    stars.forEach((star, i) => {
+        star.style.color = i < value ? '#f4c430' : '#333';
+    });
+}
+
+function resetStars(rawg_id, value) {
+    const stars = document.querySelectorAll(`#stars-${rawg_id} span`);
+    stars.forEach((star, i) => {
+        star.style.color = i < value ? '#f4c430' : '#333';
+    });
+}
+
+async function setRating(rawg_id, rating) {
+    try {
+        await fetch(`${BASE_URL}/ratings`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ rawg_id, rating })
+        });
+        userRatings.set(rawg_id, rating);
+        resetStars(rawg_id, rating);
+        const label = document.getElementById(`rating-label-${rawg_id}`);
+        if (label) label.textContent = `${rating}/10`;
+        playSound('wishlist');
+    } catch (err) {
+        console.error('Failed to set rating:', err);
+    }
+}
+
+async function removeRating(rawg_id) {
+    try {
+        await fetch(`${BASE_URL}/ratings/${rawg_id}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        });
+        userRatings.delete(rawg_id);
+        resetStars(rawg_id, 0);
+        const label = document.getElementById(`rating-label-${rawg_id}`);
+        if (label) label.textContent = 'Not rated';
+    } catch (err) {
+        console.error('Failed to remove rating:', err);
+    }
+}
+
 // ─── RECENTLY VIEWED ─────────────────────────────────────
 function addToRecentlyViewed(game) {
     recentlyViewed = recentlyViewed.filter(g => g.rawg_id !== game.rawg_id);
@@ -438,6 +495,8 @@ function createGameCard(game, index) {
 
     const isWishlisted = wishlist.has(game.rawg_id);
     const gameStatus = userGameStatuses.get(game.rawg_id);
+    const userRating = userRatings.get(game.rawg_id);
+
     const statusBadge = gameStatus ? `
         <span class="status-badge" style="
             position: absolute;
@@ -452,6 +511,12 @@ function createGameCard(game, index) {
             z-index: 1;
             font-family: 'Rajdhani', sans-serif;
         ">${statusLabels[gameStatus]}</span>
+    ` : '';
+
+    const userRatingBadge = userRating ? `
+        <span style="color:#f4c430;font-size:0.8rem;font-weight:700;font-family:'Rajdhani',sans-serif;">
+            ★ ${userRating}/10
+        </span>
     ` : '';
 
     card.innerHTML = `
@@ -470,6 +535,7 @@ function createGameCard(game, index) {
                 <span class="release-date">📅 ${formatDate(game.release_date)}</span>
                 <span class="rating">${rating}</span>
             </div>
+            ${userRatingBadge ? `<div style="margin:0.2rem 0;">${userRatingBadge}</div>` : ''}
             <div class="countdown">${countdown || ''}</div>
             <div class="genres">${genres}</div>
         </div>
@@ -585,12 +651,19 @@ async function openModal(game) {
         : '';
 
     let currentStatus = null;
+    let currentRating = null;
     if (isLoggedIn()) {
         try {
-            const res = await fetch(`${BASE_URL}/user-games`, { headers: authHeaders() });
-            const userGames = await res.json();
-            const found = userGames.find(g => g.rawg_id === game.rawg_id);
-            if (found) currentStatus = found.status;
+            const [gamesRes, ratingsRes] = await Promise.all([
+                fetch(`${BASE_URL}/user-games`, { headers: authHeaders() }),
+                fetch(`${BASE_URL}/ratings`, { headers: authHeaders() })
+            ]);
+            const userGames = await gamesRes.json();
+            const userRatingsData = await ratingsRes.json();
+            const foundGame = userGames.find(g => g.rawg_id === game.rawg_id);
+            const foundRating = userRatingsData.find(r => r.rawg_id === game.rawg_id);
+            if (foundGame) currentStatus = foundGame.status;
+            if (foundRating) currentRating = foundRating.rating;
         } catch {}
     }
 
@@ -646,6 +719,41 @@ async function openModal(game) {
         </div>
     `;
 
+    const ratingSection = isLoggedIn() ? `
+        <div style="margin-top:1.2rem;border-top:1px solid rgba(120,40,200,0.3);padding-top:1.2rem;">
+            <p style="color:#00c8ff;font-family:'Orbitron',sans-serif;font-size:0.8rem;letter-spacing:1px;margin-bottom:0.8rem;">⭐ MY RATING</p>
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+                <div id="stars-${game.rawg_id}" style="display:flex;gap:0.2rem;">
+                    ${Array.from({length: 10}, (_, i) => `
+                        <span
+                            data-value="${i + 1}"
+                            onclick="setRating(${game.rawg_id}, ${i + 1})"
+                            onmouseover="hoverStars(${game.rawg_id}, ${i + 1})"
+                            onmouseout="resetStars(${game.rawg_id}, ${currentRating || 0})"
+                            style="
+                                font-size: 1.4rem;
+                                cursor: pointer;
+                                transition: transform 0.1s;
+                                color: ${currentRating && i < currentRating ? '#f4c430' : '#333'};
+                                display: inline-block;
+                            "
+                        >★</span>
+                    `).join('')}
+                </div>
+                <span id="rating-label-${game.rawg_id}" style="color:#f4c430;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.9rem;">
+                    ${currentRating ? `${currentRating}/10` : 'Not rated'}
+                </span>
+                ${currentRating ? `
+                    <button onclick="removeRating(${game.rawg_id})" style="
+                        background:transparent;border:1px solid #555;color:#555;
+                        padding:0.2rem 0.6rem;border-radius:20px;cursor:pointer;
+                        font-family:'Rajdhani',sans-serif;font-size:0.75rem;
+                    ">✕ Clear</button>
+                ` : ''}
+            </div>
+        </div>
+    ` : '';
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
@@ -664,6 +772,7 @@ async function openModal(game) {
                 <p>🖥️ <strong>Platforms:</strong> ${game.platforms || 'N/A'}</p>
                 <p>🎮 <strong>Metacritic:</strong> ${game.metacritic || 'Not rated yet'}</p>
                 ${statusButtons}
+                ${ratingSection}
                 <div id="game-description" style="margin-top:1rem;">
                     <p><strong style="color:#00c8ff;">📖 Description:</strong></p>
                     <p id="description-text" style="margin-top:0.5rem;color:#888;font-style:italic;font-size:0.9rem;line-height:1.7;">Loading description...</p>
@@ -784,7 +893,7 @@ document.getElementById('genre').addEventListener('change', (e) => {
 
 // ─── INIT ────────────────────────────────────────────────
 async function init() {
-    await Promise.all([loadWishlist(), loadUserGameStatuses()]);
+    await Promise.all([loadWishlist(), loadUserGameStatuses(), loadUserRatings()]);
     await fetchGames();
 }
 
