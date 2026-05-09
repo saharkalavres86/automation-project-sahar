@@ -316,20 +316,6 @@ async function loadUserRatings() {
     } catch {}
 }
 
-function hoverStars(rawg_id, value) {
-    const stars = document.querySelectorAll(`#stars-${rawg_id} span`);
-    stars.forEach((star, i) => {
-        star.style.color = i < value ? '#f4c430' : '#333';
-    });
-}
-
-function resetStars(rawg_id, value) {
-    const stars = document.querySelectorAll(`#stars-${rawg_id} span`);
-    stars.forEach((star, i) => {
-        star.style.color = i < value ? '#f4c430' : '#333';
-    });
-}
-
 async function setRating(rawg_id, rating) {
     try {
         await fetch(`${BASE_URL}/ratings`, {
@@ -338,9 +324,6 @@ async function setRating(rawg_id, rating) {
             body: JSON.stringify({ rawg_id, rating })
         });
         userRatings.set(rawg_id, rating);
-        resetStars(rawg_id, rating);
-        const label = document.getElementById(`rating-label-${rawg_id}`);
-        if (label) label.textContent = `${rating}/10`;
         playSound('wishlist');
     } catch (err) {
         console.error('Failed to set rating:', err);
@@ -354,9 +337,6 @@ async function removeRating(rawg_id) {
             headers: authHeaders()
         });
         userRatings.delete(rawg_id);
-        resetStars(rawg_id, 0);
-        const label = document.getElementById(`rating-label-${rawg_id}`);
-        if (label) label.textContent = 'Not rated';
     } catch (err) {
         console.error('Failed to remove rating:', err);
     }
@@ -514,9 +494,11 @@ function createGameCard(game, index) {
     ` : '';
 
     const userRatingBadge = userRating ? `
-        <span style="color:#f4c430;font-size:0.8rem;font-weight:700;font-family:'Rajdhani',sans-serif;">
-            ★ ${userRating}/10
-        </span>
+        <div style="margin:0.2rem 0;">
+            <span style="color:#f4c430;font-size:0.8rem;font-weight:700;font-family:'Rajdhani',sans-serif;">
+                ★ ${userRating}/10
+            </span>
+        </div>
     ` : '';
 
     card.innerHTML = `
@@ -535,7 +517,7 @@ function createGameCard(game, index) {
                 <span class="release-date">📅 ${formatDate(game.release_date)}</span>
                 <span class="rating">${rating}</span>
             </div>
-            ${userRatingBadge ? `<div style="margin:0.2rem 0;">${userRatingBadge}</div>` : ''}
+            ${userRatingBadge}
             <div class="countdown">${countdown || ''}</div>
             <div class="genres">${genres}</div>
         </div>
@@ -642,7 +624,6 @@ async function openModal(game) {
     document.body.style.overflow = 'hidden';
 
     const screenshotList = game.screenshots ? game.screenshots.split(',') : [];
-
     const screenshots = screenshotList.length > 0
         ? screenshotList.map((s, i) =>
             `<img src="${s}" alt="screenshot" class="screenshot-img" referrerpolicy="no-referrer"
@@ -725,26 +706,20 @@ async function openModal(game) {
             <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
                 <div id="stars-${game.rawg_id}" style="display:flex;gap:0.2rem;">
                     ${Array.from({length: 10}, (_, i) => `
-                        <span
-                            data-value="${i + 1}"
-                            onclick="setRating(${game.rawg_id}, ${i + 1})"
-                            onmouseover="hoverStars(${game.rawg_id}, ${i + 1})"
-                            onmouseout="resetStars(${game.rawg_id}, ${currentRating || 0})"
-                            style="
-                                font-size: 1.4rem;
-                                cursor: pointer;
-                                transition: transform 0.1s;
-                                color: ${currentRating && i < currentRating ? '#f4c430' : '#333'};
-                                display: inline-block;
-                            "
-                        >★</span>
+                        <span data-value="${i + 1}" style="
+                            font-size: 1.4rem;
+                            cursor: pointer;
+                            transition: transform 0.1s;
+                            color: ${currentRating && i < currentRating ? '#f4c430' : '#333'};
+                            display: inline-block;
+                        ">★</span>
                     `).join('')}
                 </div>
                 <span id="rating-label-${game.rawg_id}" style="color:#f4c430;font-family:'Rajdhani',sans-serif;font-weight:700;font-size:0.9rem;">
                     ${currentRating ? `${currentRating}/10` : 'Not rated'}
                 </span>
                 ${currentRating ? `
-                    <button onclick="removeRating(${game.rawg_id})" style="
+                    <button id="clear-rating-${game.rawg_id}" style="
                         background:transparent;border:1px solid #555;color:#555;
                         padding:0.2rem 0.6rem;border-radius:20px;cursor:pointer;
                         font-family:'Rajdhani',sans-serif;font-size:0.75rem;
@@ -789,6 +764,43 @@ async function openModal(game) {
     `;
 
     document.body.appendChild(overlay);
+
+    // Wire up star rating events
+    if (isLoggedIn()) {
+        const starsContainer = document.getElementById(`stars-${game.rawg_id}`);
+        if (starsContainer) {
+            const stars = starsContainer.querySelectorAll('span');
+            stars.forEach((star, i) => {
+                star.addEventListener('mouseover', () => {
+                    stars.forEach((s, j) => s.style.color = j <= i ? '#f4c430' : '#333');
+                    star.style.transform = 'scale(1.3)';
+                });
+                star.addEventListener('mouseout', () => {
+                    const current = userRatings.get(game.rawg_id) || 0;
+                    stars.forEach((s, j) => s.style.color = j < current ? '#f4c430' : '#333');
+                    star.style.transform = 'scale(1)';
+                });
+                star.addEventListener('click', async () => {
+                    const rating = i + 1;
+                    await setRating(game.rawg_id, rating);
+                    stars.forEach((s, j) => s.style.color = j < rating ? '#f4c430' : '#333');
+                    const label = document.getElementById(`rating-label-${game.rawg_id}`);
+                    if (label) label.textContent = `${rating}/10`;
+                });
+            });
+
+            const clearBtn = document.getElementById(`clear-rating-${game.rawg_id}`);
+            if (clearBtn) {
+                clearBtn.addEventListener('click', async () => {
+                    await removeRating(game.rawg_id);
+                    stars.forEach(s => s.style.color = '#333');
+                    const label = document.getElementById(`rating-label-${game.rawg_id}`);
+                    if (label) label.textContent = 'Not rated';
+                    clearBtn.remove();
+                });
+            }
+        }
+    }
 
     const [description, trailer] = await Promise.all([
         fetchGameDescription(game.rawg_id),
