@@ -34,9 +34,7 @@
             background: linear-gradient(180deg, rgba(120,40,200,0.15) 0%, transparent 100%);
         }
 
-        .auth-header a {
-            text-decoration: none;
-        }
+        .auth-header a { text-decoration: none; }
 
         .auth-header h1 {
             font-family: 'Orbitron', sans-serif;
@@ -76,9 +74,7 @@
             position: relative;
         }
 
-        .auth-tab.active {
-            color: #00c8ff;
-        }
+        .auth-tab.active { color: #00c8ff; }
 
         .auth-tab.active::after {
             content: '';
@@ -89,9 +85,7 @@
             background: linear-gradient(90deg, #ff3c78, #7828c8, #00c8ff);
         }
 
-        .auth-tab:hover:not(.active) {
-            color: #aaa;
-        }
+        .auth-tab:hover:not(.active) { color: #aaa; }
 
         .auth-form {
             padding: 2rem;
@@ -100,9 +94,7 @@
 
         .auth-form.active { display: block; }
 
-        .form-group {
-            margin-bottom: 1.2rem;
-        }
+        .form-group { margin-bottom: 1.2rem; }
 
         .form-group label {
             display: block;
@@ -113,6 +105,11 @@
             margin-bottom: 0.5rem;
             font-family: 'Rajdhani', sans-serif;
             font-weight: 700;
+        }
+
+        .form-group label span.required {
+            color: #ff3c78;
+            margin-left: 2px;
         }
 
         .form-group input {
@@ -135,7 +132,19 @@
             box-shadow: 0 0 20px rgba(0, 200, 255, 0.2);
         }
 
+        .form-group input.invalid {
+            border-color: #ff3c78;
+            background: rgba(255, 60, 120, 0.08);
+        }
+
         .form-group input::placeholder { color: #444; }
+
+        .field-hint {
+            font-size: 0.72rem;
+            color: #555;
+            margin-top: 0.3rem;
+            font-family: 'Rajdhani', sans-serif;
+        }
 
         .auth-btn {
             width: 100%;
@@ -210,10 +219,7 @@
             color: #fff;
         }
 
-        .google-icon {
-            width: 18px;
-            height: 18px;
-        }
+        .google-icon { width: 18px; height: 18px; }
 
         .auth-message {
             padding: 0.8rem 1rem;
@@ -273,11 +279,11 @@
                 <div class="auth-message" id="login-message"></div>
 
                 <div class="form-group">
-                    <label>Email</label>
+                    <label>Email <span class="required">*</span></label>
                     <input type="email" id="login-email" placeholder="your@email.com">
                 </div>
                 <div class="form-group">
-                    <label>Password</label>
+                    <label>Password <span class="required">*</span></label>
                     <input type="password" id="login-password" placeholder="••••••••">
                 </div>
 
@@ -303,16 +309,18 @@
                 <div class="auth-message" id="register-message"></div>
 
                 <div class="form-group">
-                    <label>Display Name</label>
+                    <label>Display Name <span class="required">*</span></label>
                     <input type="text" id="register-name" placeholder="GamerTag123">
+                    <div class="field-hint">3–20 characters, letters, numbers and underscores only</div>
                 </div>
                 <div class="form-group">
-                    <label>Email</label>
+                    <label>Email <span class="required">*</span></label>
                     <input type="email" id="register-email" placeholder="your@email.com">
                 </div>
                 <div class="form-group">
-                    <label>Password</label>
+                    <label>Password <span class="required">*</span></label>
                     <input type="password" id="register-password" placeholder="••••••••">
+                    <div class="field-hint">Min 6 characters, at least one uppercase letter and one number</div>
                 </div>
 
                 <button class="auth-btn" onclick="handleRegister()">CREATE ACCOUNT →</button>
@@ -349,11 +357,23 @@
             el.className = `auth-message ${type}`;
         }
 
+        function clearInvalid(formType) {
+            document.querySelectorAll(`#${formType}-form input`).forEach(i => i.classList.remove('invalid'));
+        }
+
+        function markInvalid(id) {
+            document.getElementById(id).classList.add('invalid');
+        }
+
         async function handleLogin() {
-            const email = document.getElementById('login-email').value;
+            const email = document.getElementById('login-email').value.trim();
             const password = document.getElementById('login-password').value;
 
-            if (!email || !password) return showMessage('login', 'Please fill in all fields', 'error');
+            clearInvalid('login');
+
+            if (!email) { markInvalid('login-email'); return showMessage('login', 'Email is required', 'error'); }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { markInvalid('login-email'); return showMessage('login', 'Please enter a valid email address', 'error'); }
+            if (!password) { markInvalid('login-password'); return showMessage('login', 'Password is required', 'error'); }
 
             const btn = document.querySelector('#login-form .auth-btn');
             btn.disabled = true;
@@ -384,12 +404,22 @@
         }
 
         async function handleRegister() {
-            const display_name = document.getElementById('register-name').value;
-            const email = document.getElementById('register-email').value;
+            const display_name = document.getElementById('register-name').value.trim();
+            const email = document.getElementById('register-email').value.trim();
             const password = document.getElementById('register-password').value;
 
-            if (!email || !password) return showMessage('register', 'Email and password are required', 'error');
-            if (password.length < 6) return showMessage('register', 'Password must be at least 6 characters', 'error');
+            clearInvalid('register');
+
+            if (!display_name) { markInvalid('register-name'); return showMessage('register', 'Display name is required', 'error'); }
+            if (display_name.length < 3) { markInvalid('register-name'); return showMessage('register', 'Display name must be at least 3 characters', 'error'); }
+            if (display_name.length > 20) { markInvalid('register-name'); return showMessage('register', 'Display name must be under 20 characters', 'error'); }
+            if (!/^[a-zA-Z0-9_]+$/.test(display_name)) { markInvalid('register-name'); return showMessage('register', 'Display name can only contain letters, numbers and underscores', 'error'); }
+            if (!email) { markInvalid('register-email'); return showMessage('register', 'Email is required', 'error'); }
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { markInvalid('register-email'); return showMessage('register', 'Please enter a valid email address', 'error'); }
+            if (!password) { markInvalid('register-password'); return showMessage('register', 'Password is required', 'error'); }
+            if (password.length < 6) { markInvalid('register-password'); return showMessage('register', 'Password must be at least 6 characters', 'error'); }
+            if (!/[A-Z]/.test(password)) { markInvalid('register-password'); return showMessage('register', 'Password must contain at least one uppercase letter', 'error'); }
+            if (!/[0-9]/.test(password)) { markInvalid('register-password'); return showMessage('register', 'Password must contain at least one number', 'error'); }
 
             const btn = document.querySelector('#register-form .auth-btn');
             btn.disabled = true;
@@ -423,7 +453,6 @@
             window.location.href = '/api/auth/google';
         }
 
-        // Allow Enter key
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 const loginActive = document.getElementById('login-form').classList.contains('active');

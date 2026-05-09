@@ -10,8 +10,8 @@ router.post('/register', async (req, res) => {
     try {
         const { email, password, display_name } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({ error: 'Email and password required' });
+        if (!email || !password || !display_name) {
+    return res.status(400).json({ error: 'All fields are required' });
         }
 
         // Check if user exists
