@@ -8,6 +8,22 @@ let currentGenre = '';
 let currentSort = 'name';
 let currentSearch = '';
 
+// ─── AUTH HELPERS ─────────────────────────────────────────
+function getToken() {
+    return localStorage.getItem('token');
+}
+
+function authHeaders() {
+    const token = getToken();
+    return token
+        ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+        : { 'Content-Type': 'application/json' };
+}
+
+function isLoggedIn() {
+    return !!getToken();
+}
+
 // ─── ARCADE SOUNDS ───────────────────────────────────────
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 const audioCtx = new AudioContext();
@@ -217,8 +233,18 @@ function openLightbox(src, allScreenshots) {
 
 // ─── WISHLIST ────────────────────────────────────────────
 async function loadWishlist() {
+    if (!isLoggedIn()) {
+        wishlist = new Set();
+        return;
+    }
     try {
-        const response = await fetch(`${BASE_URL}/wishlist`);
+        const response = await fetch(`${BASE_URL}/wishlist`, {
+            headers: authHeaders()
+        });
+        if (response.status === 401) {
+            wishlist = new Set();
+            return;
+        }
         const data = await response.json();
         wishlist = new Set(data.map(g => g.rawg_id));
 
@@ -232,10 +258,18 @@ async function loadWishlist() {
 }
 
 async function toggleWishlist(game, btn) {
+    if (!isLoggedIn()) {
+        window.location.href = '/auth';
+        return;
+    }
+
     const isWishlisted = wishlist.has(game.rawg_id);
 
     if (isWishlisted) {
-        await fetch(`${BASE_URL}/wishlist/${game.rawg_id}`, { method: 'DELETE' });
+        await fetch(`${BASE_URL}/wishlist/${game.rawg_id}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        });
         wishlist.delete(game.rawg_id);
         btn.textContent = '🔖';
         btn.title = 'Add to Wishlist';
@@ -243,7 +277,7 @@ async function toggleWishlist(game, btn) {
     } else {
         await fetch(`${BASE_URL}/wishlist`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders(),
             body: JSON.stringify(game)
         });
         wishlist.add(game.rawg_id);
@@ -296,7 +330,7 @@ function renderRecentlyViewed() {
                     cursor: pointer;
                     transition: transform 0.2s;
                 " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
-                    <img src="${game.background_image || ''}" 
+                    <img src="${game.background_image || ''}"
                         referrerpolicy="no-referrer"
                         style="width:120px;height:70px;object-fit:cover;border-radius:8px;border:1px solid #7828c8;"
                         onerror="this.style.display='none'">
@@ -339,7 +373,6 @@ async function fetchGames(genre = '', ordering = 'name', page = 1, append = fals
 
         const newGames = data.games;
 
-        // Sort — this week first
         newGames.sort((a, b) => {
             const aNew = isNewRelease(a.release_date) ? 0 : 1;
             const bNew = isNewRelease(b.release_date) ? 0 : 1;
@@ -380,9 +413,9 @@ function createGameCard(game, index) {
         ? game.genres.split(', ').map(g => `<span class="genre-tag">${g}</span>`).join('')
         : '';
 
-  const rating = game.rating && game.rating > 0
-    ? `⭐ ${game.rating}/5`
-    : `<span style="color:#444;font-size:0.72rem;font-style:italic;">Not rated yet</span>`;
+    const rating = game.rating && game.rating > 0
+        ? `⭐ ${game.rating}/5`
+        : `<span style="color:#444;font-size:0.72rem;font-style:italic;">Not rated yet</span>`;
 
     const countdown = getCountdown(game.release_date);
     const newBadge = isNewRelease(game.release_date)
@@ -417,11 +450,11 @@ function createGameCard(game, index) {
         toggleWishlist(game, wishlistBtn);
     });
 
-card.addEventListener('click', () => {
-    playSound('click');
-    addToRecentlyViewed(game);
-    openModal(game);
-});
+    card.addEventListener('click', () => {
+        playSound('click');
+        addToRecentlyViewed(game);
+        openModal(game);
+    });
 
     return card;
 }
@@ -526,27 +559,27 @@ async function openModal(game) {
 
     document.body.appendChild(overlay);
 
-  const [description, trailer] = await Promise.all([
-    fetchGameDescription(game.rawg_id),
-    fetchGameTrailer(game.rawg_id)
-]);
+    const [description, trailer] = await Promise.all([
+        fetchGameDescription(game.rawg_id),
+        fetchGameTrailer(game.rawg_id)
+    ]);
 
-const descEl = document.getElementById('description-text');
-if (descEl) {
-    descEl.textContent = description || 'No description available.';
-    descEl.style.fontStyle = description ? 'normal' : 'italic';
-    descEl.style.color = description ? '#ccc' : '#666';
-}
+    const descEl = document.getElementById('description-text');
+    if (descEl) {
+        descEl.textContent = description || 'No description available.';
+        descEl.style.fontStyle = description ? 'normal' : 'italic';
+        descEl.style.color = description ? '#ccc' : '#666';
+    }
 
-const trailerEl = document.getElementById('game-trailer');
-if (trailerEl && trailer) {
-    trailerEl.innerHTML = `
-        <div style="margin-top:1rem;border-top:1px solid rgba(120,40,200,0.3);padding-top:1rem;">
-            <p style="color:#00c8ff;font-family:'Orbitron',sans-serif;font-size:0.85rem;letter-spacing:1px;margin-bottom:0.8rem;">🎬 TRAILER</p>
-            <video controls style="width:100%;border-radius:8px;border:1px solid #7828c8;" src="${trailer}"></video>
-        </div>
-    `;
-}
+    const trailerEl = document.getElementById('game-trailer');
+    if (trailerEl && trailer) {
+        trailerEl.innerHTML = `
+            <div style="margin-top:1rem;border-top:1px solid rgba(120,40,200,0.3);padding-top:1rem;">
+                <p style="color:#00c8ff;font-family:'Orbitron',sans-serif;font-size:0.85rem;letter-spacing:1px;margin-bottom:0.8rem;">🎬 TRAILER</p>
+                <video controls style="width:100%;border-radius:8px;border:1px solid #7828c8;" src="${trailer}"></video>
+            </div>
+        `;
+    }
 
     overlay.querySelectorAll('.screenshot-img').forEach(img => {
         img.addEventListener('click', () => {
@@ -565,7 +598,6 @@ document.getElementById('search').addEventListener('input', (e) => {
     const filtered = allGames.filter(g => g.name.toLowerCase().includes(query));
     displayGames(filtered);
 
-    // Hide load more during search
     const btn = document.getElementById('load-more-btn');
     const counter = document.getElementById('games-counter');
     if (btn) btn.style.display = query ? 'none' : (currentPage >= totalPages ? 'none' : 'inline-block');

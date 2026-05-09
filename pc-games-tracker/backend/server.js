@@ -9,6 +9,9 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import pool from './db.js';
 import { fetchAndSaveGames } from './fetchGames.js';
+import session from 'express-session';
+import passport from 'passport';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -16,8 +19,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
 app.use(express.json());
-import session from 'express-session';
-import passport from 'passport';
 
 app.use(session({
     secret: process.env.JWT_SECRET,
@@ -29,6 +30,19 @@ app.use(passport.session());
 
 app.use('/api/auth', authRouter);
 app.use(express.static(join(__dirname, '../')));
+
+// ─── AUTH MIDDLEWARE ──────────────────────────────────────
+const authenticate = (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) return res.status(401).json({ error: 'Not authenticated' });
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.userId = decoded.userId;
+        next();
+    } catch {
+        res.status(401).json({ error: 'Invalid token' });
+    }
+};
 
 // ─── GAMES ROUTES ────────────────────────────────────────
 app.get('/api/games', async (req, res) => {
@@ -172,32 +186,38 @@ app.get('/api/health', async (req, res) => {
 });
 
 // ─── WISHLIST ROUTES ─────────────────────────────────────
-app.get('/api/wishlist', async (req, res) => {
+app.get('/api/wishlist', authenticate, async (req, res) => {
     try {
-        const result = await pool.query('SELECT * FROM wishlist ORDER BY added_at DESC');
+        const result = await pool.query(
+            'SELECT * FROM wishlist WHERE user_id = $1 ORDER BY added_at DESC',
+            [req.userId]
+        );
         res.json(result.rows);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-app.post('/api/wishlist', async (req, res) => {
+app.post('/api/wishlist', authenticate, async (req, res) => {
     try {
         const { rawg_id, name, release_date, rating, background_image, genres, platforms } = req.body;
         await pool.query(`
-            INSERT INTO wishlist (rawg_id, name, release_date, rating, background_image, genres, platforms)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            INSERT INTO wishlist (rawg_id, name, release_date, rating, background_image, genres, platforms, user_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             ON CONFLICT (rawg_id) DO NOTHING
-        `, [rawg_id, name, release_date, rating, background_image, genres, platforms]);
+        `, [rawg_id, name, release_date, rating, background_image, genres, platforms, req.userId]);
         res.json({ message: '✅ Added to wishlist' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-app.delete('/api/wishlist/:rawg_id', async (req, res) => {
+app.delete('/api/wishlist/:rawg_id', authenticate, async (req, res) => {
     try {
-        await pool.query('DELETE FROM wishlist WHERE rawg_id = $1', [req.params.rawg_id]);
+        await pool.query(
+            'DELETE FROM wishlist WHERE rawg_id = $1 AND user_id = $2',
+            [req.params.rawg_id, req.userId]
+        );
         res.json({ message: '✅ Removed from wishlist' });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -207,6 +227,14 @@ app.delete('/api/wishlist/:rawg_id', async (req, res) => {
 // ─── SERVE FRONTEND PAGES ────────────────────────────────
 app.get('/wishlist', (req, res) => {
     res.sendFile(join(__dirname, '../wishlist.html'));
+});
+
+app.get('/auth', (req, res) => {
+    res.sendFile(join(__dirname, '../auth.html'));
+});
+
+app.get('/auth/callback', (req, res) => {
+    res.sendFile(join(__dirname, '../auth-callback.html'));
 });
 
 app.get('/', (req, res) => {
@@ -220,17 +248,13 @@ cron.schedule('0 8 * * *', async () => {
         const count = await fetchAndSaveGames();
         console.log(`✅ Daily refresh complete — ${count} games updated`);
 
-        // Send release alerts
         const subscribers = await pool.query('SELECT email FROM subscribers');
-        
         for (const subscriber of subscribers.rows) {
             try {
-                // Find wishlisted games releasing within 3 days
                 const upcomingGames = await pool.query(`
                     SELECT w.* FROM wishlist w
                     WHERE w.release_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days'
                 `);
-
                 if (upcomingGames.rows.length > 0) {
                     await sendReleaseAlert(subscriber.email, upcomingGames.rows);
                 }
@@ -238,11 +262,28 @@ cron.schedule('0 8 * * *', async () => {
                 console.error(`❌ Failed to send alert to ${subscriber.email}:`, emailError.message);
             }
         }
-
     } catch (error) {
         console.error('❌ Daily refresh failed:', error.message);
     }
 }, { timezone: 'Asia/Jerusalem' });
+
+// ─── TEST EMAIL ALERT ─────────────────────────────────────
+app.post('/api/test-alert', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const games = await pool.query(`SELECT * FROM wishlist LIMIT 3`);
+
+        if (games.rows.length === 0) {
+            return res.json({ message: 'No games in wishlist to test with' });
+        }
+
+        await sendReleaseAlert(email, games.rows);
+        res.json({ message: `✅ Test alert sent to ${email}` });
+    } catch (error) {
+        console.error('❌ test-alert error:', error);
+        res.status(500).json({ error: error.message, stack: error.stack });
+    }
+});
 
 // ─── START SERVER ─────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
@@ -255,51 +296,4 @@ app.listen(PORT, async () => {
     } catch (error) {
         console.error('❌ Initial fetch failed:', error.message);
     }
-});
-
-// ─── TEST EMAIL ALERT ─────────────────────────────────────
-app.post('/api/test-alert', async (req, res) => {
-    try {
-        const { email } = req.body;
-        const games = await pool.query(`
-            SELECT * FROM wishlist LIMIT 3
-        `);
-        
-        if (games.rows.length === 0) {
-            return res.json({ message: 'No games in wishlist to test with' });
-        }
-
-        await sendReleaseAlert(email, games.rows);
-        res.json({ message: `✅ Test alert sent to ${email}` });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.post('/api/test-alert', async (req, res) => {
-    try {
-        const { email } = req.body;
-        const games = await pool.query(`SELECT * FROM wishlist LIMIT 3`);
-        
-        if (games.rows.length === 0) {
-            return res.json({ message: 'No games in wishlist to test with' });
-        }
-
-        await sendReleaseAlert(email, games.rows);
-        res.json({ message: `✅ Test alert sent to ${email}` });
-    } catch (error) {
-        console.error('❌ test-alert error:', error); // <-- ADD THIS
-        res.status(500).json({ error: error.message, stack: error.stack });
-    }
-    
-});
-
-// ─── AUTH ROUTES ─────────────────────────────────────────
-app.get('/auth', (req, res) => {
-    res.sendFile(join(__dirname, '../auth.html'));
-});
-
-// ─── CALLBACK PAGE ───────────────────────────────────────────
-app.get('/auth/callback', (req, res) => {
-    res.sendFile(join(__dirname, '../auth-callback.html'));
 });
