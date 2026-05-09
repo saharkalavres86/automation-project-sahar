@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Games Tracker — Sign In</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+
+        .auth-box {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 20px;
+            border: 1px solid rgba(120, 40, 200, 0.4);
+            box-shadow: 0 0 60px rgba(120, 40, 200, 0.3);
+            width: 100%;
+            max-width: 440px;
+            overflow: hidden;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .auth-header {
+            padding: 2rem 2rem 1.5rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(120, 40, 200, 0.2);
+            background: linear-gradient(180deg, rgba(120,40,200,0.15) 0%, transparent 100%);
+        }
+
+        .auth-header a {
+            text-decoration: none;
+        }
+
+        .auth-header h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ff3c78, #7828c8, #00c8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.3rem;
+            filter: drop-shadow(0 0 15px rgba(120, 40, 200, 0.5));
+        }
+
+        .auth-header p {
+            color: #888;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid rgba(120, 40, 200, 0.2);
+        }
+
+        .auth-tab {
+            flex: 1;
+            padding: 1rem;
+            background: none;
+            border: none;
+            color: #666;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .auth-tab.active {
+            color: #00c8ff;
+        }
+
+        .auth-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #ff3c78, #7828c8, #00c8ff);
+        }
+
+        .auth-tab:hover:not(.active) {
+            color: #aaa;
+        }
+
+        .auth-form {
+            padding: 2rem;
+            display: none;
+        }
+
+        .auth-form.active { display: block; }
+
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+
+        .form-group label {
+            display: block;
+            color: #aaa;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 0.5rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            border: 2px solid rgba(120, 40, 200, 0.4);
+            background: rgba(120, 40, 200, 0.08);
+            color: #fff;
+            font-size: 0.95rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            border-color: #00c8ff;
+            background: rgba(0, 200, 255, 0.08);
+            box-shadow: 0 0 20px rgba(0, 200, 255, 0.2);
+        }
+
+        .form-group input::placeholder { color: #444; }
+
+        .auth-btn {
+            width: 100%;
+            padding: 0.9rem;
+            background: linear-gradient(90deg, #ff3c78, #7828c8);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(255, 60, 120, 0.4);
+            margin-top: 0.5rem;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(255, 60, 120, 0.6);
+        }
+
+        .auth-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(120, 40, 200, 0.3);
+        }
+
+        .divider span {
+            color: #555;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .google-btn {
+            width: 100%;
+            padding: 0.9rem;
+            background: rgba(255,255,255,0.05);
+            border: 2px solid rgba(120, 40, 200, 0.4);
+            border-radius: 10px;
+            color: #ccc;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.7rem;
+            letter-spacing: 0.5px;
+        }
+
+        .google-btn:hover {
+            border-color: #00c8ff;
+            background: rgba(0, 200, 255, 0.08);
+            color: #fff;
+        }
+
+        .google-icon {
+            width: 18px;
+            height: 18px;
+        }
+
+        .auth-message {
+            padding: 0.8rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: none;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .auth-message.error {
+            background: rgba(255, 60, 120, 0.15);
+            border: 1px solid rgba(255, 60, 120, 0.4);
+            color: #ff3c78;
+            display: block;
+        }
+
+        .auth-message.success {
+            background: rgba(0, 200, 255, 0.15);
+            border: 1px solid rgba(0, 200, 255, 0.4);
+            color: #00c8ff;
+            display: block;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 1.5rem;
+            color: #555;
+            font-size: 0.8rem;
+            text-decoration: none;
+            letter-spacing: 0.5px;
+            transition: color 0.3s;
+        }
+
+        .back-link:hover { color: #7828c8; }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="auth-header">
+                <a href="/">
+                    <h1>🎮 Games Tracker</h1>
+                    <p>Your ultimate game companion</p>
+                </a>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchTab('login')">SIGN IN</button>
+                <button class="auth-tab" onclick="switchTab('register')">REGISTER</button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <div class="auth-form active" id="login-form">
+                <div class="auth-message" id="login-message"></div>
+
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" placeholder="••••••••">
+                </div>
+
+                <button class="auth-btn" onclick="handleLogin()">SIGN IN →</button>
+
+                <div class="divider"><span>or</span></div>
+
+                <button class="google-btn" onclick="handleGoogleLogin()">
+                    <svg class="google-icon" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+
+                <a href="/" class="back-link">← Back to Games</a>
+            </div>
+
+            <!-- REGISTER FORM -->
+            <div class="auth-form" id="register-form">
+                <div class="auth-message" id="register-message"></div>
+
+                <div class="form-group">
+                    <label>Display Name</label>
+                    <input type="text" id="register-name" placeholder="GamerTag123">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="register-email" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="register-password" placeholder="••••••••">
+                </div>
+
+                <button class="auth-btn" onclick="handleRegister()">CREATE ACCOUNT →</button>
+
+                <div class="divider"><span>or</span></div>
+
+                <button class="google-btn" onclick="handleGoogleLogin()">
+                    <svg class="google-icon" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+
+                <a href="/" class="back-link">← Back to Games</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.auth-tab').forEach((t, i) => {
+                t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+            });
+            document.getElementById('login-form').classList.toggle('active', tab === 'login');
+            document.getElementById('register-form').classList.toggle('active', tab === 'register');
+        }
+
+        function showMessage(formType, message, type) {
+            const el = document.getElementById(`${formType}-message`);
+            el.textContent = message;
+            el.className = `auth-message ${type}`;
+        }
+
+        async function handleLogin() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            if (!email || !password) return showMessage('login', 'Please fill in all fields', 'error');
+
+            const btn = document.querySelector('#login-form .auth-btn');
+            btn.disabled = true;
+            btn.textContent = 'SIGNING IN...';
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showMessage('login', data.error, 'error');
+                } else {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showMessage('login', '✅ Welcome back! Redirecting...', 'success');
+                    setTimeout(() => window.location.href = '/', 1000);
+                }
+            } catch (err) {
+                showMessage('login', 'Something went wrong. Try again.', 'error');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'SIGN IN →';
+        }
+
+        async function handleRegister() {
+            const display_name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+
+            if (!email || !password) return showMessage('register', 'Email and password are required', 'error');
+            if (password.length < 6) return showMessage('register', 'Password must be at least 6 characters', 'error');
+
+            const btn = document.querySelector('#register-form .auth-btn');
+            btn.disabled = true;
+            btn.textContent = 'CREATING ACCOUNT...';
+
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, display_name })
+                });
+                const data = await res.json();
+
+                if (!res.ok) {
+                    showMessage('register', data.error, 'error');
+                } else {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    showMessage('register', '✅ Account created! Redirecting...', 'success');
+                    setTimeout(() => window.location.href = '/', 1000);
+                }
+            } catch (err) {
+                showMessage('register', 'Something went wrong. Try again.', 'error');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'CREATE ACCOUNT →';
+        }
+
+        function handleGoogleLogin() {
+            window.location.href = '/api/auth/google';
+        }
+
+        // Allow Enter key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const loginActive = document.getElementById('login-form').classList.contains('active');
+                loginActive ? handleLogin() : handleRegister();
+            }
+        });
+    </script>
+</body>
+</html>

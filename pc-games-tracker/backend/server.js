@@ -282,3 +282,8 @@ app.post('/api/test-alert', async (req, res) => {
     }
     
 });
+
+// ─── AUTH ROUTES ─────────────────────────────────────────
+app.get('/auth', (req, res) => {
+    res.sendFile(join(__dirname, '../auth.html'));
+});
