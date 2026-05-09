@@ -224,6 +224,51 @@ app.delete('/api/wishlist/:rawg_id', authenticate, async (req, res) => {
     }
 });
 
+// ─── USER GAMES (BACKLOG) ─────────────────────────────────
+app.get('/api/user-games', authenticate, async (req, res) => {
+    try {
+        const { status } = req.query;
+        let query = 'SELECT * FROM user_games WHERE user_id = $1';
+        const params = [req.userId];
+        if (status) {
+            query += ' AND status = $2';
+            params.push(status);
+        }
+        query += ' ORDER BY added_at DESC';
+        const result = await pool.query(query, params);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/user-games', authenticate, async (req, res) => {
+    try {
+        const { rawg_id, name, background_image, release_date, rating, genres, status } = req.body;
+        await pool.query(`
+            INSERT INTO user_games (user_id, rawg_id, name, background_image, release_date, rating, genres, status)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            ON CONFLICT (user_id, rawg_id) DO UPDATE SET status = $8
+        `, [req.userId, rawg_id, name, background_image, release_date, rating, genres, status]);
+        res.json({ message: '✅ Game status updated' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/user-games/:rawg_id', authenticate, async (req, res) => {
+    try {
+        await pool.query(
+            'DELETE FROM user_games WHERE rawg_id = $1 AND user_id = $2',
+            [req.params.rawg_id, req.userId]
+        );
+        res.json({ message: '✅ Game removed from list' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 // ─── SERVE FRONTEND PAGES ────────────────────────────────
 app.get('/wishlist', (req, res) => {
     res.sendFile(join(__dirname, '../wishlist.html'));
