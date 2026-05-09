@@ -16,6 +16,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
 app.use(express.json());
+import session from 'express-session';
+import passport from 'passport';
+
+app.use(session({
+    secret: process.env.JWT_SECRET,
+    resave: false,
+    saveUninitialized: false
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
 app.use('/api/auth', authRouter);
 app.use(express.static(join(__dirname, '../')));
 
@@ -286,4 +297,9 @@ app.post('/api/test-alert', async (req, res) => {
 // ─── AUTH ROUTES ─────────────────────────────────────────
 app.get('/auth', (req, res) => {
     res.sendFile(join(__dirname, '../auth.html'));
+});
+
+// ─── CALLBACK PAGE ───────────────────────────────────────────
+app.get('/auth/callback', (req, res) => {
+    res.sendFile(join(__dirname, '../auth-callback.html'));
 });

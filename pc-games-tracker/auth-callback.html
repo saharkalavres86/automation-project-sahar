@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head><title>Signing in...</title></head>
+<body>
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const user = params.get('user');
+    if (token && user) {
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', user);
+        window.location.href = '/';
+    } else {
+        window.location.href = '/auth?error=google';
+    }
+</script>
+</body>
+</html>
