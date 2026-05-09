@@ -102,14 +102,40 @@
 
     <script src="app.js"></script>
     <script>
-        // Update auth button based on login state
         window.addEventListener('DOMContentLoaded', () => {
-            const user = localStorage.getItem('user');
+            const token = localStorage.getItem('token');
             const authBtn = document.getElementById('auth-nav-btn');
+
+            // Auto-logout if user no longer exists in DB
+            if (token) {
+                fetch('/api/auth/me', {
+                    headers: { Authorization: `Bearer ${token}` }
+                }).then(res => {
+                    if (!res.ok) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        authBtn.textContent = '👤 SIGN IN';
+                        authBtn.href = '/auth';
+                    }
+                }).catch(() => {
+                    // Network error — don't log out, just leave as is
+                });
+            }
+
+            // Update button if logged in
+            const user = localStorage.getItem('user');
             if (user) {
                 const parsed = JSON.parse(user);
                 authBtn.textContent = `👤 ${parsed.display_name || 'PROFILE'}`;
-                authBtn.href = '/profile';
+                authBtn.href = '#';
+                authBtn.onclick = (e) => {
+                    e.preventDefault();
+                    if (confirm('Sign out?')) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        window.location.reload();
+                    }
+                };
             }
         });
     </script>
