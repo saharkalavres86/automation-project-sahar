@@ -341,4 +341,10 @@ app.listen(PORT, async () => {
     } catch (error) {
         console.error('❌ Initial fetch failed:', error.message);
     }
+
+});
+
+// ─── LIBRARY ───────────────────────────────────────────────
+app.get('/library', (req, res) => {
+    res.sendFile(join(__dirname, '../library.html'));
 });

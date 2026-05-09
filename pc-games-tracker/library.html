@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>My Library — Games Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .library-stats {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            padding: 1.5rem 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            text-align: center;
+            border: 1px solid rgba(120, 40, 200, 0.3);
+            min-width: 120px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(120, 40, 200, 0.3);
+        }
+
+        .stat-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            display: block;
+        }
+
+        .stat-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #888;
+            margin-top: 0.2rem;
+        }
+
+        .library-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0 2rem 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .lib-tab {
+            padding: 0.6rem 1.5rem;
+            border-radius: 20px;
+            border: 2px solid rgba(120, 40, 200, 0.4);
+            background: transparent;
+            color: #888;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .lib-tab:hover { color: #fff; border-color: #7828c8; }
+
+        .lib-tab.active-all { background: linear-gradient(90deg, #ff3c78, #7828c8); border-color: transparent; color: #fff; }
+        .lib-tab.active-playing { background: #00c8ff; border-color: transparent; color: #000; }
+        .lib-tab.active-completed { background: #00ff88; border-color: transparent; color: #000; }
+        .lib-tab.active-backlog { background: #7828c8; border-color: transparent; color: #fff; }
+        .lib-tab.active-dropped { background: #ff3c78; border-color: transparent; color: #fff; }
+
+        .library-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            padding: 0 2rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .library-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(120, 40, 200, 0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+
+        .library-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px rgba(120, 40, 200, 0.3);
+        }
+
+        .library-card img {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+        }
+
+        .library-card-info { padding: 1rem; }
+
+        .library-card-info h3 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.4rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .library-card-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .library-status-badge {
+            padding: 0.25rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .library-card-actions {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .status-change-btn {
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            border: 1px solid;
+            background: transparent;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .remove-btn {
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            border: 1px solid #555;
+            background: transparent;
+            color: #555;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-left: auto;
+        }
+
+        .remove-btn:hover { border-color: #ff3c78; color: #ff3c78; }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            grid-column: 1 / -1;
+        }
+
+        .empty-state p {
+            color: #555;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-state a {
+            display: inline-block;
+            background: linear-gradient(90deg, #ff3c78, #7828c8);
+            color: white;
+            padding: 0.7rem 2rem;
+            border-radius: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            text-decoration: none;
+            letter-spacing: 1px;
+        }
+
+        .not-logged-in {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .not-logged-in p {
+            color: #888;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .library-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; padding: 0 1rem 2rem; }
+            .library-stats { gap: 0.8rem; padding: 1rem; }
+            .stat-card { min-width: 90px; padding: 0.8rem 1rem; }
+            .stat-number { font-size: 1.5rem; }
+        }
+
+        @media (max-width: 400px) {
+            .library-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>📚 My Library</h1>
+        <p>Your personal game collection</p>
+        <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+            <a href="/" style="
+                display: inline-block;
+                background: linear-gradient(90deg, #ff3c78, #7828c8);
+                color: white;
+                padding: 0.5rem 1.5rem;
+                border-radius: 20px;
+                font-family: 'Orbitron', sans-serif;
+                font-size: 0.75rem;
+                text-decoration: none;
+                letter-spacing: 1px;
+                box-shadow: 0 0 15px rgba(255, 60, 120, 0.5);
+            ">🎮 BACK TO GAMES</a>
+            <a href="/wishlist" style="
+                display: inline-block;
+                background: linear-gradient(90deg, #7828c8, #00c8ff);
+                color: white;
+                padding: 0.5rem 1.5rem;
+                border-radius: 20px;
+                font-family: 'Orbitron', sans-serif;
+                font-size: 0.75rem;
+                text-decoration: none;
+                letter-spacing: 1px;
+                box-shadow: 0 0 15px rgba(120, 40, 200, 0.5);
+            ">🔖 MY WISHLIST</a>
+        </div>
+    </header>
+
+    <div id="not-logged-in" class="not-logged-in" style="display:none;">
+        <p>Sign in to view your library</p>
+        <a href="/auth" style="
+            display: inline-block;
+            background: linear-gradient(90deg, #ff3c78, #7828c8);
+            color: white;
+            padding: 0.7rem 2rem;
+            border-radius: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            text-decoration: none;
+            letter-spacing: 1px;
+        ">👤 SIGN IN</a>
+    </div>
+
+    <div id="library-content">
+        <div class="library-stats" id="library-stats"></div>
+
+        <div class="library-tabs">
+            <button class="lib-tab active-all" onclick="filterLibrary('all')">🎮 ALL</button>
+            <button class="lib-tab" onclick="filterLibrary('playing')">🎮 PLAYING</button>
+            <button class="lib-tab" onclick="filterLibrary('completed')">✅ COMPLETED</button>
+            <button class="lib-tab" onclick="filterLibrary('backlog')">📋 BACKLOG</button>
+            <button class="lib-tab" onclick="filterLibrary('dropped')">❌ DROPPED</button>
+        </div>
+
+        <div class="library-grid" id="library-grid"></div>
+    </div>
+
+    <script>
+        const statusColors = { playing: '#00c8ff', completed: '#00ff88', backlog: '#7828c8', dropped: '#ff3c78' };
+        const statusLabels = { playing: '🎮 Playing', completed: '✅ Completed', backlog: '📋 Backlog', dropped: '❌ Dropped' };
+        let allUserGames = [];
+        let currentFilter = 'all';
+
+        function getToken() { return localStorage.getItem('token'); }
+        function authHeaders() {
+            return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` };
+        }
+
+        async function loadLibrary() {
+            const token = getToken();
+            if (!token) {
+                document.getElementById('not-logged-in').style.display = 'block';
+                document.getElementById('library-content').style.display = 'none';
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/user-games', { headers: authHeaders() });
+                if (res.status === 401) {
+                    document.getElementById('not-logged-in').style.display = 'block';
+                    document.getElementById('library-content').style.display = 'none';
+                    return;
+                }
+                allUserGames = await res.json();
+                renderStats();
+                renderGames('all');
+            } catch (err) {
+                console.error('Failed to load library:', err);
+            }
+        }
+
+        function renderStats() {
+            const counts = { playing: 0, completed: 0, backlog: 0, dropped: 0 };
+            allUserGames.forEach(g => counts[g.status]++);
+
+            document.getElementById('library-stats').innerHTML = `
+                <div class="stat-card">
+                    <span class="stat-number" style="background:linear-gradient(90deg,#ff3c78,#7828c8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${allUserGames.length}</span>
+                    <span class="stat-label">Total Games</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" style="color:#00c8ff;">${counts.playing}</span>
+                    <span class="stat-label">Playing</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" style="color:#00ff88;">${counts.completed}</span>
+                    <span class="stat-label">Completed</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" style="color:#7828c8;">${counts.backlog}</span>
+                    <span class="stat-label">Backlog</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" style="color:#ff3c78;">${counts.dropped}</span>
+                    <span class="stat-label">Dropped</span>
+                </div>
+            `;
+        }
+
+        function filterLibrary(status) {
+            currentFilter = status;
+
+            document.querySelectorAll('.lib-tab').forEach(tab => {
+                tab.className = 'lib-tab';
+            });
+
+            const tabs = document.querySelectorAll('.lib-tab');
+            const tabMap = { all: 0, playing: 1, completed: 2, backlog: 3, dropped: 4 };
+            tabs[tabMap[status]].classList.add(`active-${status}`);
+
+            renderGames(status);
+        }
+
+        function renderGames(status) {
+            const grid = document.getElementById('library-grid');
+            const filtered = status === 'all' ? allUserGames : allUserGames.filter(g => g.status === status);
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <p>No games here yet!</p>
+                        <a href="/">Browse games and add them to your list →</a>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = filtered.map(game => `
+                <div class="library-card" id="card-${game.rawg_id}">
+                    ${game.background_image
+                        ? `<img src="${game.background_image}" alt="${game.name}" referrerpolicy="no-referrer">`
+                        : `<div style="width:100%;height:160px;background:linear-gradient(135deg,#1a1a2e,#7828c8);display:flex;align-items:center;justify-content:center;font-size:3rem;">🎮</div>`
+                    }
+                    <div class="library-card-info">
+                        <h3>${game.name}</h3>
+                        <div class="library-card-meta">
+                            <span class="library-status-badge" style="background:${statusColors[game.status]};color:${game.status === 'backlog' ? '#fff' : '#000'};">
+                                ${statusLabels[game.status]}
+                            </span>
+                            <span style="color:#666;font-size:0.8rem;font-family:'Rajdhani',sans-serif;">
+                                ${game.release_date ? new Date(game.release_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) : 'TBA'}
+                            </span>
+                        </div>
+                        <div class="library-card-actions">
+                            ${Object.entries(statusLabels)
+                                .filter(([s]) => s !== game.status)
+                                .map(([s, label]) => `
+                                    <button class="status-change-btn"
+                                        style="border-color:${statusColors[s]};color:${statusColors[s]};"
+                                        onclick="changeStatus(${game.rawg_id}, '${s}', ${JSON.stringify(game).replace(/"/g, '&quot;')})">
+                                        ${label}
+                                    </button>
+                                `).join('')}
+                            <button class="remove-btn" onclick="removeGame(${game.rawg_id})">🗑️ Remove</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function changeStatus(rawg_id, status, game) {
+            try {
+                await fetch('/api/user-games', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ ...game, rawg_id, status })
+                });
+                const gameIndex = allUserGames.findIndex(g => g.rawg_id === rawg_id);
+                if (gameIndex !== -1) allUserGames[gameIndex].status = status;
+                renderStats();
+                renderGames(currentFilter);
+            } catch (err) {
+                console.error('Failed to change status:', err);
+            }
+        }
+
+        async function removeGame(rawg_id) {
+            try {
+                await fetch(`/api/user-games/${rawg_id}`, {
+                    method: 'DELETE',
+                    headers: authHeaders()
+                });
+                allUserGames = allUserGames.filter(g => g.rawg_id !== rawg_id);
+                renderStats();
+                renderGames(currentFilter);
+            } catch (err) {
+                console.error('Failed to remove game:', err);
+            }
+        }
+
+        loadLibrary();
+    </script>
+</body>
+</html>
