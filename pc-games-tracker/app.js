@@ -186,7 +186,6 @@ function updateLoadMoreBtn(total) {
     const btn = document.getElementById('load-more-btn');
     const counter = document.getElementById('games-counter');
     const showing = Math.min(currentPage * 12, total);
-
     if (counter) counter.textContent = `Showing ${showing} of ${total} games`;
     if (btn) btn.style.display = currentPage >= totalPages ? 'none' : 'inline-block';
 }
@@ -525,6 +524,69 @@ async function openModal(game) {
           ).join('')
         : '';
 
+    // Fetch current game status if logged in
+    let currentStatus = null;
+    if (isLoggedIn()) {
+        try {
+            const res = await fetch(`${BASE_URL}/user-games`, { headers: authHeaders() });
+            const userGames = await res.json();
+            const found = userGames.find(g => g.rawg_id === game.rawg_id);
+            if (found) currentStatus = found.status;
+        } catch {}
+    }
+
+    const statusButtons = isLoggedIn() ? `
+        <div style="margin-top:1.2rem;border-top:1px solid rgba(120,40,200,0.3);padding-top:1.2rem;">
+            <p style="color:#00c8ff;font-family:'Orbitron',sans-serif;font-size:0.8rem;letter-spacing:1px;margin-bottom:0.8rem;">📋 MY LIST</p>
+            <div style="display:flex;flex-wrap:wrap;gap:0.5rem;">
+                ${[
+                    { status: 'playing', label: '🎮 Playing', color: '#00c8ff' },
+                    { status: 'completed', label: '✅ Completed', color: '#00ff88' },
+                    { status: 'backlog', label: '📋 Backlog', color: '#7828c8' },
+                    { status: 'dropped', label: '❌ Dropped', color: '#ff3c78' }
+                ].map(({ status, label, color }) => `
+                    <button onclick="setGameStatus(${game.rawg_id}, '${status}', this, ${JSON.stringify(game).replace(/"/g, '&quot;')})"
+                        data-status="${status}"
+                        style="
+                            padding: 0.5rem 1rem;
+                            border-radius: 20px;
+                            border: 2px solid ${color};
+                            background: ${currentStatus === status ? color : 'transparent'};
+                            color: ${currentStatus === status ? '#000' : color};
+                            font-family: 'Rajdhani', sans-serif;
+                            font-weight: 700;
+                            font-size: 0.85rem;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                        ">
+                        ${label}
+                    </button>
+                `).join('')}
+                ${currentStatus ? `
+                    <button onclick="removeGameStatus(${game.rawg_id}, this)"
+                        style="
+                            padding: 0.5rem 1rem;
+                            border-radius: 20px;
+                            border: 2px solid #555;
+                            background: transparent;
+                            color: #555;
+                            font-family: 'Rajdhani', sans-serif;
+                            font-weight: 700;
+                            font-size: 0.85rem;
+                            cursor: pointer;
+                            transition: all 0.2s;
+                        ">
+                        🗑️ Remove
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+    ` : `
+        <div style="margin-top:1.2rem;border-top:1px solid rgba(120,40,200,0.3);padding-top:1.2rem;">
+            <a href="/auth" style="color:#7828c8;font-family:'Rajdhani',sans-serif;font-size:0.9rem;">Sign in to track this game →</a>
+        </div>
+    `;
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
@@ -542,6 +604,7 @@ async function openModal(game) {
                 <p>🎭 <strong>Genres:</strong> ${game.genres || 'N/A'}</p>
                 <p>🖥️ <strong>Platforms:</strong> ${game.platforms || 'N/A'}</p>
                 <p>🎮 <strong>Metacritic:</strong> ${game.metacritic || 'Not rated yet'}</p>
+                ${statusButtons}
                 <div id="game-description" style="margin-top:1rem;">
                     <p><strong style="color:#00c8ff;">📖 Description:</strong></p>
                     <p id="description-text" style="margin-top:0.5rem;color:#888;font-style:italic;font-size:0.9rem;line-height:1.7;">Loading description...</p>
@@ -588,6 +651,52 @@ async function openModal(game) {
             openLightbox(screenshots[index], screenshots);
         });
     });
+}
+
+// ─── GAME STATUS ─────────────────────────────────────────
+async function setGameStatus(rawg_id, status, clickedBtn, game) {
+    try {
+        await fetch(`${BASE_URL}/user-games`, {
+            method: 'POST',
+            headers: authHeaders(),
+            body: JSON.stringify({ ...game, rawg_id, status })
+        });
+
+        const allBtns = clickedBtn.closest('div').querySelectorAll('button[data-status]');
+        const colors = { playing: '#00c8ff', completed: '#00ff88', backlog: '#7828c8', dropped: '#ff3c78' };
+
+        allBtns.forEach(btn => {
+            const s = btn.dataset.status;
+            const color = colors[s];
+            btn.style.background = 'transparent';
+            btn.style.color = color;
+        });
+
+        const color = colors[status];
+        clickedBtn.style.background = color;
+        clickedBtn.style.color = '#000';
+
+        playSound('wishlist');
+    } catch (err) {
+        console.error('Failed to set game status:', err);
+    }
+}
+
+async function removeGameStatus(rawg_id, btn) {
+    try {
+        await fetch(`${BASE_URL}/user-games/${rawg_id}`, {
+            method: 'DELETE',
+            headers: authHeaders()
+        });
+        btn.closest('div').querySelectorAll('button[data-status]').forEach(b => {
+            const colors = { playing: '#00c8ff', completed: '#00ff88', backlog: '#7828c8', dropped: '#ff3c78' };
+            b.style.background = 'transparent';
+            b.style.color = colors[b.dataset.status];
+        });
+        btn.remove();
+    } catch (err) {
+        console.error('Failed to remove game status:', err);
+    }
 }
 
 // ─── EVENT LISTENERS ─────────────────────────────────────
