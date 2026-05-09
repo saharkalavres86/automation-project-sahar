@@ -268,6 +268,47 @@ app.delete('/api/user-games/:rawg_id', authenticate, async (req, res) => {
     }
 });
 
+// ─── USER RATINGS ─────────────────────────────────────────
+app.get('/api/ratings', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM user_ratings WHERE user_id = $1',
+            [req.userId]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/ratings', authenticate, async (req, res) => {
+    try {
+        const { rawg_id, rating } = req.body;
+        if (!rawg_id || !rating || rating < 1 || rating > 10) {
+            return res.status(400).json({ error: 'Invalid rating' });
+        }
+        await pool.query(`
+            INSERT INTO user_ratings (user_id, rawg_id, rating)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (user_id, rawg_id) DO UPDATE SET rating = $3
+        `, [req.userId, rawg_id, rating]);
+        res.json({ message: '✅ Rating saved' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/ratings/:rawg_id', authenticate, async (req, res) => {
+    try {
+        await pool.query(
+            'DELETE FROM user_ratings WHERE rawg_id = $1 AND user_id = $2',
+            [req.params.rawg_id, req.userId]
+        );
+        res.json({ message: '✅ Rating removed' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 // ─── SERVE FRONTEND PAGES ────────────────────────────────
 app.get('/wishlist', (req, res) => {
@@ -353,3 +394,4 @@ app.get('/library', (req, res) => {
 app.get('/profile', (req, res) => {
     res.sendFile(join(__dirname, '../profile.html'));
 });
+
