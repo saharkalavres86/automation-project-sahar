@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>My Profile — Games Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .profile-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .profile-hero {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 20px;
+            border: 1px solid rgba(120, 40, 200, 0.4);
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 0 40px rgba(120, 40, 200, 0.2);
+            flex-wrap: wrap;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid #7828c8;
+            object-fit: cover;
+            box-shadow: 0 0 20px rgba(120, 40, 200, 0.5);
+            flex-shrink: 0;
+        }
+
+        .profile-avatar-placeholder {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid #7828c8;
+            background: linear-gradient(135deg, #7828c8, #ff3c78);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            flex-shrink: 0;
+            box-shadow: 0 0 20px rgba(120, 40, 200, 0.5);
+        }
+
+        .profile-info { flex: 1; }
+
+        .profile-info h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ff3c78, #7828c8, #00c8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.3rem;
+        }
+
+        .profile-info p {
+            color: #888;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.95rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .profile-joined {
+            color: #555;
+            font-size: 0.8rem;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 1px;
+        }
+
+        .signout-btn {
+            background: rgba(255, 60, 120, 0.1);
+            border: 2px solid #ff3c78;
+            color: #ff3c78;
+            padding: 0.6rem 1.5rem;
+            border-radius: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 0.8rem;
+            display: inline-block;
+        }
+
+        .signout-btn:hover {
+            background: #ff3c78;
+            color: #fff;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 12px;
+            padding: 1.2rem;
+            text-align: center;
+            border: 1px solid rgba(120, 40, 200, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(120, 40, 200, 0.3);
+        }
+
+        .stat-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            display: block;
+        }
+
+        .stat-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #888;
+            margin-top: 0.2rem;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: #00c8ff;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(0, 200, 255, 0.2);
+        }
+
+        .recent-games {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .recent-game-card {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(120, 40, 200, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .recent-game-card:hover { transform: translateY(-4px); }
+
+        .recent-game-card img {
+            width: 100%;
+            height: 90px;
+            object-fit: cover;
+        }
+
+        .recent-game-card-info {
+            padding: 0.6rem;
+        }
+
+        .recent-game-card-info h4 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.3rem;
+        }
+
+        .recent-status-badge {
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            font-family: 'Rajdhani', sans-serif;
+            display: inline-block;
+        }
+
+        .completion-bar-container {
+            margin-bottom: 2rem;
+        }
+
+        .completion-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .completion-bar-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            width: 100px;
+            flex-shrink: 0;
+        }
+
+        .completion-bar-track {
+            flex: 1;
+            height: 8px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .completion-bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+
+        .completion-bar-count {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            color: #888;
+            width: 30px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .not-logged-in {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .not-logged-in p {
+            color: #888;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .profile-container { padding: 1rem; }
+            .profile-hero { gap: 1rem; }
+            .profile-info h2 { font-size: 1.2rem; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .recent-games { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>👤 My Profile</h1>
+        <p>Your gaming identity</p>
+        <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+            <a href="/" style="
+                display: inline-block;
+                background: linear-gradient(90deg, #ff3c78, #7828c8);
+                color: white;
+                padding: 0.5rem 1.5rem;
+                border-radius: 20px;
+                font-family: 'Orbitron', sans-serif;
+                font-size: 0.75rem;
+                text-decoration: none;
+                letter-spacing: 1px;
+                box-shadow: 0 0 15px rgba(255, 60, 120, 0.5);
+            ">🎮 BACK TO GAMES</a>
+            <a href="/library" style="
+                display: inline-block;
+                background: linear-gradient(90deg, #00c8ff, #7828c8);
+                color: white;
+                padding: 0.5rem 1.5rem;
+                border-radius: 20px;
+                font-family: 'Orbitron', sans-serif;
+                font-size: 0.75rem;
+                text-decoration: none;
+                letter-spacing: 1px;
+                box-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
+            ">📚 MY LIBRARY</a>
+            <a href="/wishlist" style="
+                display: inline-block;
+                background: linear-gradient(90deg, #7828c8, #00c8ff);
+                color: white;
+                padding: 0.5rem 1.5rem;
+                border-radius: 20px;
+                font-family: 'Orbitron', sans-serif;
+                font-size: 0.75rem;
+                text-decoration: none;
+                letter-spacing: 1px;
+                box-shadow: 0 0 15px rgba(120, 40, 200, 0.5);
+            ">🔖 MY WISHLIST</a>
+        </div>
+    </header>
+
+    <div id="not-logged-in" class="not-logged-in" style="display:none;">
+        <p>Sign in to view your profile</p>
+        <a href="/auth" style="
+            display: inline-block;
+            background: linear-gradient(90deg, #ff3c78, #7828c8);
+            color: white;
+            padding: 0.7rem 2rem;
+            border-radius: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            text-decoration: none;
+            letter-spacing: 1px;
+        ">👤 SIGN IN</a>
+    </div>
+
+    <div id="profile-content" class="profile-container" style="display:none;">
+
+        <!-- PROFILE HERO -->
+        <div class="profile-hero">
+            <div id="profile-avatar"></div>
+            <div class="profile-info">
+                <h2 id="profile-name"></h2>
+                <p id="profile-email"></p>
+                <p class="profile-joined" id="profile-joined"></p>
+                <button class="signout-btn" onclick="signOut()">🚪 SIGN OUT</button>
+            </div>
+        </div>
+
+        <!-- STATS -->
+        <p class="section-title">📊 GAMING STATS</p>
+        <div class="stats-grid" id="stats-grid"></div>
+
+        <!-- COMPLETION BREAKDOWN -->
+        <p class="section-title">📈 COLLECTION BREAKDOWN</p>
+        <div class="completion-bar-container" id="completion-bars"></div>
+
+        <!-- RECENT ACTIVITY -->
+        <p class="section-title">🕐 RECENTLY ADDED</p>
+        <div class="recent-games" id="recent-games"></div>
+
+    </div>
+
+    <script>
+        const statusColors = { playing: '#00c8ff', completed: '#00ff88', backlog: '#7828c8', dropped: '#ff3c78' };
+        const statusLabels = { playing: '🎮 Playing', completed: '✅ Completed', backlog: '📋 Backlog', dropped: '❌ Dropped' };
+
+        function getToken() { return localStorage.getItem('token'); }
+        function authHeaders() {
+            return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` };
+        }
+
+        function signOut() {
+            if (confirm('Sign out?')) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/';
+            }
+        }
+
+        async function loadProfile() {
+            const token = getToken();
+            if (!token) {
+                document.getElementById('not-logged-in').style.display = 'block';
+                return;
+            }
+
+            try {
+                const [userRes, gamesRes, wishlistRes] = await Promise.all([
+                    fetch('/api/auth/me', { headers: authHeaders() }),
+                    fetch('/api/user-games', { headers: authHeaders() }),
+                    fetch('/api/wishlist', { headers: authHeaders() })
+                ]);
+
+                if (userRes.status === 401) {
+                    document.getElementById('not-logged-in').style.display = 'block';
+                    return;
+                }
+
+                const user = await userRes.json();
+                const games = await gamesRes.json();
+                const wishlist = await wishlistRes.json();
+
+                document.getElementById('profile-content').style.display = 'block';
+
+                renderHero(user);
+                renderStats(games, wishlist);
+                renderBars(games);
+                renderRecentGames(games);
+
+            } catch (err) {
+                console.error('Failed to load profile:', err);
+            }
+        }
+
+        function renderHero(user) {
+            const avatarEl = document.getElementById('profile-avatar');
+            if (user.avatar_url) {
+                avatarEl.innerHTML = `<img src="${user.avatar_url}" class="profile-avatar" referrerpolicy="no-referrer">`;
+            } else {
+                avatarEl.innerHTML = `<div class="profile-avatar-placeholder">👤</div>`;
+            }
+
+            document.getElementById('profile-name').textContent = user.display_name || 'Gamer';
+            document.getElementById('profile-email').textContent = `📧 ${user.email}`;
+            document.getElementById('profile-joined').textContent = `Joined ${new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`;
+        }
+
+        function renderStats(games, wishlist) {
+            const counts = { playing: 0, completed: 0, backlog: 0, dropped: 0 };
+            games.forEach(g => counts[g.status]++);
+
+            document.getElementById('stats-grid').innerHTML = `
+                <div class="stat-card">
+                    <span class="stat-number" style="background:linear-gradient(90deg,#ff3c78,#7828c8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${games.length}</span>
+                    <span class="stat-label">Total Tracked</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" style="color:#00c8ff;">${counts.playing}</span>
+                    <span class="stat-label">Playing</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" style="color:#00ff88;">${counts.completed}</span>
+                    <span class="stat-label">Completed</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" style="color:#7828c8;">${counts.backlog}</span>
+                    <span class="stat-label">Backlog</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" style="color:#ff3c78;">${counts.dropped}</span>
+                    <span class="stat-label">Dropped</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-number" style="color:#f4c430;">${wishlist.length}</span>
+                    <span class="stat-label">Wishlisted</span>
+                </div>
+            `;
+        }
+
+        function renderBars(games) {
+            const counts = { playing: 0, completed: 0, backlog: 0, dropped: 0 };
+            games.forEach(g => counts[g.status]++);
+            const total = games.length || 1;
+
+            document.getElementById('completion-bars').innerHTML = Object.entries(counts).map(([status, count]) => `
+                <div class="completion-bar-row">
+                    <span class="completion-bar-label" style="color:${statusColors[status]};">${statusLabels[status]}</span>
+                    <div class="completion-bar-track">
+                        <div class="completion-bar-fill" style="width:${(count/total*100).toFixed(1)}%;background:${statusColors[status]};"></div>
+                    </div>
+                    <span class="completion-bar-count">${count}</span>
+                </div>
+            `).join('');
+        }
+
+        function renderRecentGames(games) {
+            const recent = [...games].sort((a, b) => new Date(b.added_at) - new Date(a.added_at)).slice(0, 6);
+
+            if (recent.length === 0) {
+                document.getElementById('recent-games').innerHTML = `
+                    <p style="color:#555;font-family:'Rajdhani',sans-serif;grid-column:1/-1;">No games tracked yet. <a href="/" style="color:#7828c8;">Browse games →</a></p>
+                `;
+                return;
+            }
+
+            document.getElementById('recent-games').innerHTML = recent.map(game => `
+                <div class="recent-game-card">
+                    ${game.background_image
+                        ? `<img src="${game.background_image}" alt="${game.name}" referrerpolicy="no-referrer">`
+                        : `<div style="width:100%;height:90px;background:linear-gradient(135deg,#1a1a2e,#7828c8);display:flex;align-items:center;justify-content:center;font-size:2rem;">🎮</div>`
+                    }
+                    <div class="recent-game-card-info">
+                        <h4>${game.name}</h4>
+                        <span class="recent-status-badge" style="background:${statusColors[game.status]};color:${game.status === 'backlog' ? '#fff' : '#000'};">
+                            ${statusLabels[game.status]}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>

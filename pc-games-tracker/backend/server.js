@@ -348,3 +348,8 @@ app.listen(PORT, async () => {
 app.get('/library', (req, res) => {
     res.sendFile(join(__dirname, '../library.html'));
 });
+
+// ─── PROFILE ───────────────────────────────────────────────
+app.get('/profile', (req, res) => {
+    res.sendFile(join(__dirname, '../profile.html'));
+});
