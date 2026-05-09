@@ -1,6 +1,7 @@
 const BASE_URL = '/api';
 let allGames = [];
 let wishlist = new Set();
+let userGameStatuses = new Map();
 let recentlyViewed = [];
 let currentPage = 1;
 let totalPages = 1;
@@ -294,6 +295,16 @@ async function toggleWishlist(game, btn) {
     playSound('wishlist');
 }
 
+// ─── USER GAME STATUSES ───────────────────────────────────
+async function loadUserGameStatuses() {
+    if (!isLoggedIn()) return;
+    try {
+        const res = await fetch(`${BASE_URL}/user-games`, { headers: authHeaders() });
+        const data = await res.json();
+        userGameStatuses = new Map(data.map(g => [g.rawg_id, g.status]));
+    } catch {}
+}
+
 // ─── RECENTLY VIEWED ─────────────────────────────────────
 function addToRecentlyViewed(game) {
     recentlyViewed = recentlyViewed.filter(g => g.rawg_id !== game.rawg_id);
@@ -399,10 +410,14 @@ async function loadMore() {
 }
 
 // ─── DISPLAY GAMES ───────────────────────────────────────
+const statusLabels = { playing: '🎮 Playing', completed: '✅ Completed', backlog: '📋 Backlog', dropped: '❌ Dropped' };
+const statusColors = { playing: '#00c8ff', completed: '#00ff88', backlog: '#7828c8', dropped: '#ff3c78' };
+
 function createGameCard(game, index) {
     const card = document.createElement('div');
     card.className = 'game-card';
     card.style.animationDelay = `${index * 0.05}s`;
+    card.dataset.rawgId = game.rawg_id;
 
     const image = game.background_image
         ? `<img src="${game.background_image}" alt="${game.name}" loading="lazy" referrerpolicy="no-referrer">`
@@ -422,9 +437,26 @@ function createGameCard(game, index) {
         : '';
 
     const isWishlisted = wishlist.has(game.rawg_id);
+    const gameStatus = userGameStatuses.get(game.rawg_id);
+    const statusBadge = gameStatus ? `
+        <span class="status-badge" style="
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: ${statusColors[gameStatus]};
+            color: #000;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            z-index: 1;
+            font-family: 'Rajdhani', sans-serif;
+        ">${statusLabels[gameStatus]}</span>
+    ` : '';
 
     card.innerHTML = `
         ${newBadge}
+        ${statusBadge}
         ${image}
         <div class="game-info">
             <div class="card-top">
@@ -456,6 +488,34 @@ function createGameCard(game, index) {
     });
 
     return card;
+}
+
+function updateCardStatusBadge(rawg_id, status) {
+    const card = document.querySelector(`.game-card[data-rawg-id="${rawg_id}"]`);
+    if (!card) return;
+
+    const existing = card.querySelector('.status-badge');
+    if (existing) existing.remove();
+
+    if (status) {
+        const badge = document.createElement('span');
+        badge.className = 'status-badge';
+        badge.style.cssText = `
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: ${statusColors[status]};
+            color: #000;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            z-index: 1;
+            font-family: 'Rajdhani', sans-serif;
+        `;
+        badge.textContent = statusLabels[status];
+        card.appendChild(badge);
+    }
 }
 
 function displayGames(games) {
@@ -524,7 +584,6 @@ async function openModal(game) {
           ).join('')
         : '';
 
-    // Fetch current game status if logged in
     let currentStatus = null;
     if (isLoggedIn()) {
         try {
@@ -663,18 +722,17 @@ async function setGameStatus(rawg_id, status, clickedBtn, game) {
         });
 
         const allBtns = clickedBtn.closest('div').querySelectorAll('button[data-status]');
-        const colors = { playing: '#00c8ff', completed: '#00ff88', backlog: '#7828c8', dropped: '#ff3c78' };
-
         allBtns.forEach(btn => {
             const s = btn.dataset.status;
-            const color = colors[s];
             btn.style.background = 'transparent';
-            btn.style.color = color;
+            btn.style.color = statusColors[s];
         });
 
-        const color = colors[status];
-        clickedBtn.style.background = color;
+        clickedBtn.style.background = statusColors[status];
         clickedBtn.style.color = '#000';
+
+        userGameStatuses.set(rawg_id, status);
+        updateCardStatusBadge(rawg_id, status);
 
         playSound('wishlist');
     } catch (err) {
@@ -688,12 +746,15 @@ async function removeGameStatus(rawg_id, btn) {
             method: 'DELETE',
             headers: authHeaders()
         });
+
         btn.closest('div').querySelectorAll('button[data-status]').forEach(b => {
-            const colors = { playing: '#00c8ff', completed: '#00ff88', backlog: '#7828c8', dropped: '#ff3c78' };
             b.style.background = 'transparent';
-            b.style.color = colors[b.dataset.status];
+            b.style.color = statusColors[b.dataset.status];
         });
         btn.remove();
+
+        userGameStatuses.delete(rawg_id);
+        updateCardStatusBadge(rawg_id, null);
     } catch (err) {
         console.error('Failed to remove game status:', err);
     }
@@ -723,7 +784,7 @@ document.getElementById('genre').addEventListener('change', (e) => {
 
 // ─── INIT ────────────────────────────────────────────────
 async function init() {
-    await loadWishlist();
+    await Promise.all([loadWishlist(), loadUserGameStatuses()]);
     await fetchGames();
 }
 
