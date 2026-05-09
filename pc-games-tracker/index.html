@@ -119,7 +119,6 @@
             const token = localStorage.getItem('token');
             const authBtn = document.getElementById('auth-nav-btn');
 
-            // Auto-logout if user no longer exists in DB
             if (token) {
                 fetch('/api/auth/me', {
                     headers: { Authorization: `Bearer ${token}` }
@@ -133,20 +132,12 @@
                 }).catch(() => {});
             }
 
-            // Update button if logged in
             const user = localStorage.getItem('user');
             if (user) {
                 const parsed = JSON.parse(user);
                 authBtn.textContent = `👤 ${parsed.display_name || 'PROFILE'}`;
-                authBtn.href = '#';
-                authBtn.onclick = (e) => {
-                    e.preventDefault();
-                    if (confirm('Sign out?')) {
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('user');
-                        window.location.reload();
-                    }
-                };
+                authBtn.href = '/profile';
+                authBtn.onclick = null;
             }
         });
     </script>
