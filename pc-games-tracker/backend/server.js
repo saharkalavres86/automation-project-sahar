@@ -1,4 +1,5 @@
 import { sendReleaseAlert } from './emailService.js';
+import authRouter from './auth.js';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -15,6 +16,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use('/api/auth', authRouter);
 app.use(express.static(join(__dirname, '../')));
 
 // ─── GAMES ROUTES ────────────────────────────────────────
@@ -121,20 +123,6 @@ app.get('/api/game/:id/trailer', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // ─── REFRESH ROUTE ───────────────────────────────────────
 app.post('/api/refresh', async (req, res) => {
