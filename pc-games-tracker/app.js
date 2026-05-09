@@ -324,9 +324,29 @@ async function setRating(rawg_id, rating) {
             body: JSON.stringify({ rawg_id, rating })
         });
         userRatings.set(rawg_id, rating);
+        updateCardRatingBadge(rawg_id, rating);
         playSound('wishlist');
     } catch (err) {
         console.error('Failed to set rating:', err);
+    }
+}
+
+function updateCardRatingBadge(rawg_id, rating) {
+    const card = document.querySelector(`.game-card[data-rawg-id="${rawg_id}"]`);
+    if (!card) return;
+
+    let badge = card.querySelector('.user-rating-badge');
+    if (rating) {
+        if (!badge) {
+            badge = document.createElement('div');
+            badge.className = 'user-rating-badge';
+            badge.style.cssText = 'margin:0.2rem 0;';
+            const countdown = card.querySelector('.countdown');
+            if (countdown) countdown.before(badge);
+        }
+        badge.innerHTML = `<span style="color:#f4c430;font-size:0.8rem;font-weight:700;font-family:'Rajdhani',sans-serif;">★ ${rating}/10</span>`;
+    } else if (badge) {
+        badge.remove();
     }
 }
 
@@ -337,6 +357,7 @@ async function removeRating(rawg_id) {
             headers: authHeaders()
         });
         userRatings.delete(rawg_id);
+        updateCardRatingBadge(rawg_id, null);
     } catch (err) {
         console.error('Failed to remove rating:', err);
     }
