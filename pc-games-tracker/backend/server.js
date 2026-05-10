@@ -405,8 +405,7 @@ app.get('/api/discover', async (req, res) => {
         if (token) {
             try {
                 const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                const userId = decoded.userId;
-
+                const { userId } = decoded;
                 const ratedGames = await pool.query(`
                     SELECT ug.genres, ur.rating
                     FROM user_ratings ur
