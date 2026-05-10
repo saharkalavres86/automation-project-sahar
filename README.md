@@ -1,8 +1,8 @@
-# 🎮 PC Games Tracker — Full Stack Automation Project
+# 🎮 Games Tracker — Full Stack Web Platform
 
 ![CI/CD](https://github.com/saharkalavres86/automation-project-sahar/actions/workflows/playwright.yml/badge.svg)
 
-A production-grade full stack web application with a complete test automation framework — built from scratch by a Senior QA Engineer transitioning into automation.
+A production-grade full stack game tracking platform with user authentication, personalized libraries, hidden gem discovery, and a complete test automation framework — built from scratch by a Senior QA Engineer transitioning into automation.
 
 🔗 **Live App:** [automation-project-sahar-production.up.railway.app](https://automation-project-sahar-production.up.railway.app)
 
@@ -10,7 +10,7 @@ A production-grade full stack web application with a complete test automation fr
 
 ## 🚀 What This Project Does
 
-Tracks upcoming PC game releases in real time using the RAWG API, with a full automation test suite covering UI, API, sorting, filtering, and data integrity.
+A game tracking and discovery platform where users can browse upcoming PC game releases, manage personal game libraries, rate games, track backlog, and discover hidden gems — all backed by a real-time RAWG API integration and a PostgreSQL database.
 
 ---
 
@@ -19,13 +19,22 @@ Tracks upcoming PC game releases in real time using the RAWG API, with a full au
 ```
 automation-project/
 ├── pc-games-tracker/
-│   ├── index.html              ← Frontend
+│   ├── index.html              ← Main games page
+│   ├── wishlist.html           ← Wishlist page
+│   ├── library.html            ← Personal game library
+│   ├── profile.html            ← User profile & stats
+│   ├── discover.html           ← Hidden gems discovery
+│   ├── auth.html               ← Login & Register
+│   ├── auth-callback.html      ← Google OAuth callback
 │   ├── app.js                  ← Frontend logic
+│   ├── wishlist.js             ← Wishlist frontend logic
 │   ├── style.css               ← Arcade UI theme
 │   └── backend/
 │       ├── server.js           ← Node.js + Express API
+│       ├── auth.js             ← Authentication routes
 │       ├── db.js               ← PostgreSQL connection
 │       ├── fetchGames.js       ← RAWG API fetcher
+│       ├── emailService.js     ← Resend email integration
 │       └── tests/
 │           └── api.test.js     ← Jest API tests (22 tests)
 ├── tests/
@@ -44,6 +53,8 @@ automation-project/
 | Frontend | HTML + CSS + JavaScript |
 | Backend | Node.js + Express |
 | Database | PostgreSQL |
+| Authentication | JWT + Passport.js + Google OAuth 2.0 |
+| Email | Resend API |
 | Test Automation | Playwright + JavaScript |
 | API Testing | Jest + node-fetch |
 | CI/CD | GitHub Actions |
@@ -54,26 +65,58 @@ automation-project/
 
 ## ✨ App Features
 
-## ✨ App Features
+### 🎮 Game Discovery
+- **Live game listings** — upcoming PC games fetched from RAWG API
+- **🔥 This Week badge** — games releasing within 7 days shown first
+- **⏳ Countdown timer** — days remaining until each game releases
+- **🔍 Search** — filter games by name in real time
+- **🎛️ Sort & Filter** — by name, release date, rating, and genre
+- **📖 Game descriptions** — full description fetched from RAWG on click
+- **🎬 Trailers** — in-modal video trailers
+- **📸 Screenshots gallery** — lightbox viewer with navigation arrows
+- **⬇️ Load More pagination** — 12 games per page with total counter
 
-- 🎮 **Live game listings** — upcoming PC games fetched from RAWG API
-- 🔥 **This Week badge** — games releasing within 7 days always shown first
-- ⏳ **Countdown timer** — days remaining until each game releases
-- 🔖 **Wishlist** — save favorite games, persisted in PostgreSQL
-- 📄 **Wishlist page** — dedicated page to view and manage saved games
-- 📖 **Game descriptions** — full game description fetched from RAWG on click
-- 📸 **Screenshots gallery** — view game screenshots inside the modal
-- 🖼️ **Lightbox** — full screen screenshot viewer with navigation arrows
-- 🎨 **Arcade UI theme** — animated cards, glowing effects, custom fonts
-- 🔊 **Sound effects** — arcade sounds on hover, click and wishlist
-- 🎵 **Background music** — retro arcade melody toggle
-- 🔍 **Search** — filter games by name in real time
-- 🎛️ **Sort & Filter** — by name, release date, rating, and genre
-- 📱 **Mobile responsive** — works on all screen sizes
-- 🚫 **Scroll lock** — background scroll disabled when modal is open
-- 🔄 **Daily auto-refresh** — DB updates every day at 08:00 (Israel time)
-- 🏥 **Midnight health check** — auto-triggers refresh if DB has less than 10 games
-- ⬇️ **Load More pagination** — loads 12 games at a time with a counter showing total
+### 👤 User Accounts
+- **Email + password registration** with full validation
+- **Google OAuth** — one-click sign in with Google
+- **JWT authentication** — secure session management
+- **User profile page** — avatar, stats, gaming identity
+
+### 📚 Personal Library
+- **Game status tracking** — Playing, Completed, Backlog, Dropped
+- **Status badges** on game cards and in modals
+- **My Library page** — organized view with tab filters per status
+- **Collection breakdown** — visual progress bars per status
+
+### 🔖 Wishlist
+- **Per-user wishlist** — saved games tied to your account
+- **📧 Release alerts** — email notification when wishlisted games are about to release
+- **Subscribe/unsubscribe** — manage alert preferences
+
+### ⭐ Ratings
+- **Personal 1–10 star rating** system
+- **Rating badge** shown on game cards
+- **Ratings feed into** personalized discovery
+
+### 💎 Hidden Gems Discovery
+- **Personalized recommendations** — based on your highest-rated genres
+- **Hidden gems feed** — high-rated, low-popularity games from RAWG
+- **Genre filters** — Action, RPG, Adventure, Strategy, Indie, Puzzle
+- **"Because you like X"** tags on personalized cards
+- **Direct RAWG links** — click any gem to view full details
+
+### 🎨 UI & UX
+- **Arcade UI theme** — animated cards, glowing effects, custom fonts
+- **🔊 Sound effects** — arcade sounds on hover, click, and wishlist
+- **🎵 Background music** — retro arcade melody toggle
+- **📱 Mobile responsive** — works on all screen sizes
+- **Recently Viewed** — quick access to last 5 viewed games
+- **Skeleton loading** — smooth loading states
+
+### ⚙️ Automation & Infrastructure
+- **Daily auto-refresh** — DB updates every day at 08:00 (Israel time)
+- **Midnight health check** — auto-triggers refresh if DB has less than 10 games
+- **Scheduled email alerts** — daily cron checks wishlist release dates
 
 ---
 
@@ -128,6 +171,8 @@ automation-project/
 ✅ All games have a valid rawg_id
 ```
 
+---
+
 ## ⚙️ CI/CD Pipeline
 
 Every push to `main` automatically:
@@ -142,7 +187,6 @@ Every push to `main` automatically:
 ## 🗄️ Database Schema
 
 ```sql
--- Games table
 CREATE TABLE games (
     id SERIAL PRIMARY KEY,
     rawg_id INTEGER UNIQUE,
@@ -157,17 +201,57 @@ CREATE TABLE games (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
--- Wishlist table
 CREATE TABLE wishlist (
     id SERIAL PRIMARY KEY,
-    rawg_id INTEGER UNIQUE,
+    rawg_id INTEGER,
     name VARCHAR(255),
     release_date DATE,
     rating FLOAT,
     background_image TEXT,
     genres TEXT,
     platforms TEXT,
-    added_at TIMESTAMP DEFAULT NOW()
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    added_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (rawg_id, user_id)
+);
+
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255),
+    google_id VARCHAR(255),
+    display_name VARCHAR(255),
+    avatar_url TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE subscribers (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE user_games (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    rawg_id INTEGER NOT NULL,
+    name VARCHAR(255),
+    background_image TEXT,
+    release_date DATE,
+    rating DECIMAL,
+    genres TEXT,
+    status VARCHAR(50) CHECK (status IN ('playing', 'completed', 'backlog', 'dropped')),
+    added_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (user_id, rawg_id)
+);
+
+CREATE TABLE user_ratings (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    rawg_id INTEGER NOT NULL,
+    rating INTEGER CHECK (rating >= 1 AND rating <= 10),
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (user_id, rawg_id)
 );
 ```
 
@@ -175,15 +259,58 @@ CREATE TABLE wishlist (
 
 ## 🔌 API Endpoints
 
+### Games
 | Method | Endpoint | Description |
 |---|---|---|
-| GET | `/api/games` | Get all games (supports sort, genre, search params) |
-| POST | `/api/refresh` | Manually refresh games from RAWG API |
-| GET | `/api/stats` | Get DB stats (total games, last updated) |
-| GET | `/api/health` | Health check endpoint |
-| GET | `/api/wishlist` | Get all wishlisted games |
+| GET | `/api/games` | Get all games (sort, genre, search, page params) |
+| GET | `/api/game/:id` | Get game description from RAWG |
+| GET | `/api/game/:id/trailer` | Get game trailer from RAWG |
+| POST | `/api/refresh` | Manually refresh games from RAWG |
+| GET | `/api/stats` | DB stats (total games, last updated) |
+| GET | `/api/health` | Health check |
+
+### Auth
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Register with email + password |
+| POST | `/api/auth/login` | Login with email + password |
+| GET | `/api/auth/me` | Get current user |
+| GET | `/api/auth/google` | Google OAuth login |
+| GET | `/api/auth/google/callback` | Google OAuth callback |
+
+### Wishlist
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/wishlist` | Get user's wishlist |
 | POST | `/api/wishlist` | Add game to wishlist |
 | DELETE | `/api/wishlist/:rawg_id` | Remove game from wishlist |
+
+### Library
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/user-games` | Get user's game library |
+| POST | `/api/user-games` | Add/update game status |
+| DELETE | `/api/user-games/:rawg_id` | Remove game from library |
+
+### Ratings
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/ratings` | Get user's ratings |
+| POST | `/api/ratings` | Add/update a rating |
+| DELETE | `/api/ratings/:rawg_id` | Remove a rating |
+
+### Discovery
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/discover` | Get personalized + hidden gems |
+| GET | `/api/discover/genre` | Get hidden gems by genre |
+
+### Email
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/subscribe` | Subscribe to release alerts |
+| DELETE | `/api/subscribe/:email` | Unsubscribe |
+| POST | `/api/test-alert` | Send test email alert |
 
 ---
 
@@ -193,6 +320,8 @@ CREATE TABLE wishlist (
 - Node.js 20+
 - PostgreSQL
 - RAWG API key ([rawg.io/apidocs](https://rawg.io/apidocs))
+- Resend API key ([resend.com](https://resend.com))
+- Google OAuth credentials ([console.cloud.google.com](https://console.cloud.google.com))
 
 ### Setup
 
@@ -220,40 +349,11 @@ DB_NAME=pc_games
 DB_USER=postgres
 DB_PASSWORD=your_password
 RAWG_API_KEY=your_rawg_key
+JWT_SECRET=your_jwt_secret
+RESEND_API_KEY=your_resend_key
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
 PORT=3000
-```
-
-### Create Database
-
-```sql
-CREATE DATABASE pc_games;
-\c pc_games
-
-CREATE TABLE games (
-    id SERIAL PRIMARY KEY,
-    rawg_id INTEGER UNIQUE,
-    name VARCHAR(255),
-    release_date DATE,
-    rating FLOAT,
-    metacritic INTEGER,
-    background_image TEXT,
-    genres TEXT,
-    platforms TEXT,
-    screenshots TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE wishlist (
-    id SERIAL PRIMARY KEY,
-    rawg_id INTEGER UNIQUE,
-    name VARCHAR(255),
-    release_date DATE,
-    rating FLOAT,
-    background_image TEXT,
-    genres TEXT,
-    platforms TEXT,
-    added_at TIMESTAMP DEFAULT NOW()
-);
 ```
 
 ### Run
@@ -275,12 +375,13 @@ npm test
 
 | Technique | Where Used |
 |---|---|
-| Page Object Model (POM) | `pages/LoginPage.js`, `pages/InventoryPage.js` |
-| Data Driven Testing | `lesson3.spec.js` — multiple user logins |
-| Custom Fixtures | `fixtures/base.js` — auto-login fixture |
-| API Testing | `backend/tests/api.test.js` |
-| Scheduled Tasks | `node-cron` — daily refresh + health check |
-| CI/CD | `.github/workflows/playwright.yml` |
+| API Testing | `backend/tests/api.test.js` — 22 Jest tests |
+| UI Automation | `tests/games_tracker.spec.js` — 19 Playwright tests |
+| Scheduled Tasks | `node-cron` — daily refresh + health check + email alerts |
+| CI/CD | `.github/workflows/playwright.yml` — GitHub Actions |
+| JWT Auth | Stateless authentication with 7-day tokens |
+| OAuth 2.0 | Google login via Passport.js strategy |
+| Email Automation | Resend API — automated release alert emails |
 
 ---
 
