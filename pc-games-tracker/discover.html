@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>Discover — Games Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .discover-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem 3rem;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin: 2rem 0 1rem;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 2px;
+            color: #00c8ff;
+        }
+
+        .section-subtitle {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            color: #555;
+            letter-spacing: 1px;
+        }
+
+        .section-divider {
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(0,200,255,0.3), transparent);
+        }
+
+        .gems-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.2rem;
+        }
+
+        .gem-card {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 14px;
+            overflow: hidden;
+            border: 1px solid rgba(120, 40, 200, 0.3);
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .gem-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px rgba(120, 40, 200, 0.3);
+            border-color: #7828c8;
+        }
+
+        .gem-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #ff3c78, #7828c8, #00c8ff);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .gem-card:hover::before { opacity: 1; }
+
+        .gem-card img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover;
+            transition: transform 0.3s;
+        }
+
+        .gem-card:hover img { transform: scale(1.05); }
+
+        .gem-card-no-img {
+            width: 100%;
+            height: 140px;
+            background: linear-gradient(135deg, #1a1a2e, #7828c8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+        }
+
+        .gem-info { padding: 0.9rem; }
+
+        .gem-info h3 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 0.4rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .gem-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.4rem;
+        }
+
+        .gem-rating {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #f4c430;
+        }
+
+        .gem-metacritic {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 0.1rem 0.5rem;
+            border-radius: 4px;
+            background: #00c8ff;
+            color: #000;
+        }
+
+        .gem-tag {
+            display: inline-block;
+            background: rgba(0, 200, 255, 0.1);
+            border: 1px solid rgba(0, 200, 255, 0.3);
+            color: #00c8ff;
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .because-tag {
+            display: inline-block;
+            background: rgba(255, 60, 120, 0.1);
+            border: 1px solid rgba(255, 60, 120, 0.3);
+            color: #ff3c78;
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.4rem;
+            display: block;
+        }
+
+        .hidden-gem-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: linear-gradient(90deg, #7828c8, #00c8ff);
+            color: white;
+            padding: 0.2rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 1px;
+            z-index: 1;
+        }
+
+        .wishlist-btn-discover {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.6);
+            border: none;
+            font-size: 1.1rem;
+            cursor: pointer;
+            padding: 0.3rem;
+            border-radius: 50%;
+            line-height: 1;
+            transition: transform 0.2s;
+            z-index: 2;
+        }
+
+        .wishlist-btn-discover:hover { transform: scale(1.3); }
+
+        .loading-gems {
+            text-align: center;
+            padding: 3rem;
+            color: #555;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            grid-column: 1 / -1;
+        }
+
+        .genre-filters {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .genre-filter-btn {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            border: 1px solid rgba(120, 40, 200, 0.4);
+            background: transparent;
+            color: #888;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            letter-spacing: 0.5px;
+        }
+
+        .genre-filter-btn:hover,
+        .genre-filter-btn.active {
+            background: linear-gradient(90deg, #7828c8, #00c8ff);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .personalized-banner {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border: 1px solid rgba(255, 60, 120, 0.3);
+            border-radius: 14px;
+            padding: 1.2rem 1.5rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .personalized-banner p {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.95rem;
+            color: #ccc;
+        }
+
+        .personalized-banner p span {
+            color: #ff3c78;
+            font-weight: 700;
+        }
+
+        .empty-discover {
+            text-align: center;
+            padding: 3rem;
+            grid-column: 1 / -1;
+        }
+
+        .empty-discover p {
+            color: #555;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .discover-container { padding: 0 1rem 2rem; }
+            .gems-grid { grid-template-columns: repeat(2, 1fr); gap: 0.8rem; }
+        }
+
+        @media (max-width: 400px) {
+            .gems-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🔍 Discover</h1>
+        <p>Hidden gems picked just for you</p>
+        <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+            <a href="/" style="display:inline-block;background:linear-gradient(90deg,#ff3c78,#7828c8);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;box-shadow:0 0 15px rgba(255,60,120,0.5);">🎮 BACK TO GAMES</a>
+            <a href="/library" style="display:inline-block;background:linear-gradient(90deg,#00c8ff,#7828c8);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;box-shadow:0 0 15px rgba(0,200,255,0.5);">📚 MY LIBRARY</a>
+            <a href="/wishlist" style="display:inline-block;background:linear-gradient(90deg,#7828c8,#00c8ff);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;box-shadow:0 0 15px rgba(120,40,200,0.5);">🔖 MY WISHLIST</a>
+        </div>
+    </header>
+
+    <div class="discover-container">
+
+        <!-- PERSONALIZED SECTION -->
+        <div id="personalized-section" style="display:none;">
+            <div class="section-header">
+                <p class="section-title">🎯 RECOMMENDED FOR YOU</p>
+                <div class="section-divider"></div>
+                <p class="section-subtitle" id="personalized-subtitle"></p>
+            </div>
+            <div id="personalized-banner" class="personalized-banner" style="display:none;">
+                <span style="font-size:2rem;">🤖</span>
+                <p id="personalized-reason"></p>
+            </div>
+            <div class="gems-grid" id="personalized-grid"></div>
+        </div>
+
+        <!-- HIDDEN GEMS SECTION -->
+        <div class="section-header">
+            <p class="section-title">💎 HIDDEN GEMS</p>
+            <div class="section-divider"></div>
+            <p class="section-subtitle">High rated · Low popularity</p>
+        </div>
+
+        <div class="genre-filters" id="genre-filters">
+            <button class="genre-filter-btn active" onclick="filterGenre('', this)">All</button>
+            <button class="genre-filter-btn" onclick="filterGenre('action', this)">Action</button>
+            <button class="genre-filter-btn" onclick="filterGenre('rpg', this)">RPG</button>
+            <button class="genre-filter-btn" onclick="filterGenre('adventure', this)">Adventure</button>
+            <button class="genre-filter-btn" onclick="filterGenre('strategy', this)">Strategy</button>
+            <button class="genre-filter-btn" onclick="filterGenre('indie', this)">Indie</button>
+            <button class="genre-filter-btn" onclick="filterGenre('puzzle', this)">Puzzle</button>
+        </div>
+
+        <div class="gems-grid" id="gems-grid">
+            <div class="loading-gems">💎 Finding hidden gems...</div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_KEY_RAWG = null; // handled server-side
+        let allGems = [];
+        let wishlist = new Set();
+
+        function getToken() { return localStorage.getItem('token'); }
+        function authHeaders() {
+            const token = getToken();
+            return token
+                ? { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+                : { 'Content-Type': 'application/json' };
+        }
+        function isLoggedIn() { return !!getToken(); }
+
+        async function loadWishlist() {
+            if (!isLoggedIn()) return;
+            try {
+                const res = await fetch('/api/wishlist', { headers: authHeaders() });
+                if (!res.ok) return;
+                const data = await res.json();
+                wishlist = new Set(data.map(g => g.rawg_id));
+            } catch {}
+        }
+
+        async function toggleWishlist(rawg_id, game, btn) {
+            if (!isLoggedIn()) { window.location.href = '/auth'; return; }
+
+            const isWishlisted = wishlist.has(rawg_id);
+            if (isWishlisted) {
+                await fetch(`/api/wishlist/${rawg_id}`, { method: 'DELETE', headers: authHeaders() });
+                wishlist.delete(rawg_id);
+                btn.textContent = '🔖';
+            } else {
+                await fetch('/api/wishlist', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        rawg_id,
+                        name: game.name,
+                        release_date: game.released,
+                        rating: game.rating,
+                        background_image: game.background_image,
+                        genres: game.genres?.map(g => g.name).join(', ') || '',
+                        platforms: game.platforms?.map(p => p.platform.name).join(', ') || ''
+                    })
+                });
+                wishlist.add(rawg_id);
+                btn.textContent = '❤️';
+            }
+        }
+
+        function createGemCard(game, becauseGenre = null) {
+            const isWishlisted = wishlist.has(game.id);
+            const genres = game.genres?.map(g => g.name).join(', ') || '';
+            const metacritic = game.metacritic;
+            const rating = game.rating ? `⭐ ${game.rating.toFixed(1)}/5` : '';
+
+            const card = document.createElement('div');
+            card.className = 'gem-card';
+
+            card.innerHTML = `
+                <span class="hidden-gem-badge">💎 Hidden Gem</span>
+                <button class="wishlist-btn-discover" title="${isWishlisted ? 'Remove from Wishlist' : 'Add to Wishlist'}">
+                    ${isWishlisted ? '❤️' : '🔖'}
+                </button>
+                ${game.background_image
+                    ? `<img src="${game.background_image}" alt="${game.name}" referrerpolicy="no-referrer">`
+                    : `<div class="gem-card-no-img">🎮</div>`
+                }
+                <div class="gem-info">
+                    ${becauseGenre ? `<span class="because-tag">🎯 Because you like ${becauseGenre}</span>` : ''}
+                    <h3>${game.name}</h3>
+                    <div class="gem-meta">
+                        <span class="gem-rating">${rating}</span>
+                        ${metacritic ? `<span class="gem-metacritic">${metacritic}</span>` : ''}
+                    </div>
+                    <div style="display:flex;flex-wrap:wrap;gap:0.3rem;margin-top:0.3rem;">
+                        ${game.genres?.slice(0, 2).map(g => `<span class="gem-tag">${g.name}</span>`).join('') || ''}
+                    </div>
+                </div>
+            `;
+
+            const wishlistBtn = card.querySelector('.wishlist-btn-discover');
+            wishlistBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleWishlist(game.id, game, wishlistBtn);
+            });
+
+            card.addEventListener('click', () => {
+                window.open(`https://rawg.io/games/${game.slug}`, '_blank');
+            });
+
+            return card;
+        }
+
+        async function filterGenre(genre, btn) {
+            document.querySelectorAll('.genre-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const grid = document.getElementById('gems-grid');
+            grid.innerHTML = '<div class="loading-gems">💎 Finding hidden gems...</div>';
+
+            try {
+                const url = genre
+                    ? `/api/discover/genre?genre=${genre}`
+                    : '/api/discover';
+                const res = await fetch(url, { headers: authHeaders() });
+                const data = await res.json();
+                const gems = data.gems || [];
+
+                grid.innerHTML = '';
+                if (gems.length === 0) {
+                    grid.innerHTML = '<div class="empty-discover"><p>No hidden gems found for this genre.</p></div>';
+                    return;
+                }
+                gems.forEach(game => grid.appendChild(createGemCard(game)));
+            } catch (err) {
+                grid.innerHTML = '<div class="empty-discover"><p>Failed to load gems. Try again.</p></div>';
+            }
+        }
+
+        async function loadDiscover() {
+            try {
+                const res = await fetch('/api/discover', { headers: authHeaders() });
+                const data = await res.json();
+
+                // Render personalized section
+                if (data.personalized && data.personalized.games.length > 0) {
+                    const section = document.getElementById('personalized-section');
+                    const banner = document.getElementById('personalized-banner');
+                    const reason = document.getElementById('personalized-reason');
+                    const subtitle = document.getElementById('personalized-subtitle');
+                    const grid = document.getElementById('personalized-grid');
+
+                    section.style.display = 'block';
+                    banner.style.display = 'flex';
+                    subtitle.textContent = `Based on your ${data.personalized.genre} ratings`;
+                    reason.innerHTML = `Based on your highly-rated <span>${data.personalized.genre}</span> games, here are some hidden gems you might love:`;
+
+                    data.personalized.games.forEach(game => {
+                        grid.appendChild(createGemCard(game, data.personalized.genre));
+                    });
+                }
+
+                // Render hidden gems
+                const gemsGrid = document.getElementById('gems-grid');
+                gemsGrid.innerHTML = '';
+                const gems = data.gems || [];
+
+                if (gems.length === 0) {
+                    gemsGrid.innerHTML = '<div class="empty-discover"><p>No hidden gems found right now. Try again later.</p></div>';
+                    return;
+                }
+
+                gems.forEach(game => gemsGrid.appendChild(createGemCard(game)));
+
+            } catch (err) {
+                document.getElementById('gems-grid').innerHTML =
+                    '<div class="empty-discover"><p>Failed to load. Please try again.</p></div>';
+            }
+        }
+
+        async function init() {
+            await loadWishlist();
+            await loadDiscover();
+        }
+
+        init();
+    </script>
+</body>
+</html>

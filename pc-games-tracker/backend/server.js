@@ -461,3 +461,17 @@ app.get('/api/discover', async (req, res) => {
 app.get('/discover', (req, res) => {
     res.sendFile(join(__dirname, '../discover.html'));
 });
+
+app.get('/api/discover/genre', async (req, res) => {
+    try {
+        const { genre } = req.query;
+        const API_KEY = process.env.RAWG_API_KEY;
+        const gemsRes = await fetch(
+            `https://api.rawg.io/api/games?key=${API_KEY}&genres=${genre}&ordering=-rating&page_size=20&ratings_count=10&metacritic=60,100`
+        );
+        const gemsData = await gemsRes.json();
+        res.json({ gems: gemsData.results || [] });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
