@@ -395,3 +395,70 @@ app.get('/profile', (req, res) => {
     res.sendFile(join(__dirname, '../profile.html'));
 });
 
+// ─── DISCOVER / HIDDEN GEMS ───────────────────────────────
+app.get('/api/discover', async (req, res) => {
+    try {
+        const token = req.headers.authorization?.split(' ')[1];
+        let favoriteGenres = [];
+
+        // If logged in, find user's favorite genres from ratings
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                const userId = decoded.userId;
+
+                const ratedGames = await pool.query(`
+                    SELECT ug.genres, ur.rating
+                    FROM user_ratings ur
+                    JOIN user_games ug ON ur.rawg_id = ug.rawg_id AND ug.user_id = ur.user_id
+                    WHERE ur.user_id = $1 AND ur.rating >= 7
+                `, [userId]);
+
+                const genreCount = {};
+                ratedGames.rows.forEach(g => {
+                    if (g.genres) {
+                        g.genres.split(', ').forEach(genre => {
+                        genreCount[genre] = (genreCount[genre] || 0) + 1;
+                        });
+                    }
+                });
+
+                favoriteGenres = Object.entries(genreCount)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3)
+                    .map(([genre]) => genre);
+            } catch {}
+        }
+
+        const API_KEY = process.env.RAWG_API_KEY;
+        const results = {};
+
+        // Fetch personalized gems if user has favorite genres
+        if (favoriteGenres.length > 0) {
+            const genreQuery = favoriteGenres[0].toLowerCase();
+            const personalRes = await fetch(
+                `https://api.rawg.io/api/games?key=${API_KEY}&genres=${genreQuery}&ordering=-rating&page_size=10&ratings_count=10&metacritic=60,100`
+            );
+            const personalData = await personalRes.json();
+            results.personalized = {
+                games: personalData.results || [],
+                genre: favoriteGenres[0]
+            };
+        }
+
+        // Fetch general hidden gems
+        const gemsRes = await fetch(
+            `https://api.rawg.io/api/games?key=${API_KEY}&ordering=-rating&page_size=20&ratings_count=10&metacritic=70,100`
+        );
+        const gemsData = await gemsRes.json();
+        results.gems = gemsData.results || [];
+
+        res.json(results);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/discover', (req, res) => {
+    res.sendFile(join(__dirname, '../discover.html'));
+});
