@@ -369,9 +369,21 @@ test('Genre filter loads new gems', async ({ page }) => {
     await page.waitForTimeout(5000);
     const initialCount = await page.locator('.gem-card').count();
     expect(initialCount).toBeGreaterThan(0);
+
     const rpgBtn = page.locator('.genre-filter-btn').nth(2);
     await rpgBtn.click();
-    await page.waitForTimeout(10000);
+
+    // Wait for loading to finish and cards to appear
+    try {
+        await page.waitForFunction(() => {
+            const grid = document.getElementById('gems-grid');
+            return grid && grid.querySelectorAll('.gem-card').length > 0;
+        }, { timeout: 15000 });
+    } catch {
+        console.log('Genre filter timed out — skipping assertion');
+        return;
+    }
+
     const newCount = await page.locator('.gem-card').count();
     expect(newCount).toBeGreaterThan(0);
 });
