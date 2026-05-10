@@ -364,17 +364,16 @@ test.describe('PC Games Tracker — Extended Tests', () => {
             await expect(page.locator('a[href="/library"]')).toBeVisible();
         });
 
-        test('Genre filter loads new gems', async ({ page }) => {
-            await page.goto(`${BASE_URL}/discover`);
-            await page.waitForTimeout(5000);
-            const rpgBtn = page.locator('.genre-filter-btn').nth(2);
-            await rpgBtn.click();
-            await page.waitForTimeout(8000);
-            const cards = page.locator('.gem-card');
-            const count = await cards.count();
-            expect(count).toBeGreaterThan(0);
-        });
-    });
+test('Genre filter loads new gems', async ({ page }) => {
+    await page.goto(`${BASE_URL}/discover`);
+    await page.waitForTimeout(5000);
+    const rpgBtn = page.locator('.genre-filter-btn').nth(2);
+    await rpgBtn.click();
+    await page.waitForSelector('.gem-card', { timeout: 15000 });
+    const cards = page.locator('.gem-card');
+    const count = await cards.count();
+    expect(count).toBeGreaterThan(0);
+});
 
     // ─── HEADER NAVIGATION TESTS ──────────────────────────
     test.describe('Header Navigation', () => {
