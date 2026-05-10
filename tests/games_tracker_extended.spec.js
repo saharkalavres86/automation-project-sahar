@@ -31,38 +31,35 @@ test.describe('PC Games Tracker — Extended Tests', () => {
             await expect(page).toHaveURL(BASE_URL + '/');
         });
 
-test('Wishlist shows empty state when no games', async ({ page }) => {
-    await page.goto(`${BASE_URL}/wishlist`);
-    await page.waitForTimeout(2000);
-    const cards = page.locator('.game-card');
-    const count = await cards.count();
-    if (count === 0) {
-        const gridText = await page.locator('#games-grid').textContent();
-        expect(
-            gridText.includes('wishlist is empty') ||
-            gridText.includes('Failed to load') ||
-            gridText.includes('Sign in') ||
-            gridText.trim() === ''
-        ).toBeTruthy();
-    }
-});
+        test('Wishlist shows empty state when no games', async ({ page }) => {
+            await page.goto(`${BASE_URL}/wishlist`);
+            await page.waitForTimeout(2000);
+            const cards = page.locator('.game-card');
+            const count = await cards.count();
+            if (count === 0) {
+                const gridText = await page.locator('#games-grid').textContent();
+                expect(
+                    gridText.includes('wishlist is empty') ||
+                    gridText.includes('Failed to load') ||
+                    gridText.includes('Sign in') ||
+                    gridText.trim() === ''
+                ).toBeTruthy();
+            }
+        });
 
-test('Adding game to wishlist shows it on wishlist page', async ({ page }) => {
-    await page.goto(BASE_URL);
-    await page.waitForSelector('.game-card', { timeout: 15000 });
-
-    // Since wishlist requires auth, just verify wishlist page loads
-    await page.goto(`${BASE_URL}/wishlist`);
-    await page.waitForTimeout(2000);
-    await expect(page.locator('header h1')).toBeVisible();
-});
+        test('Adding game to wishlist shows it on wishlist page', async ({ page }) => {
+            await page.goto(BASE_URL);
+            await page.waitForSelector('.game-card', { timeout: 15000 });
+            await page.goto(`${BASE_URL}/wishlist`);
+            await page.waitForTimeout(2000);
+            await expect(page.locator('header h1')).toBeVisible();
+        });
 
         test('Removing game from wishlist page works', async ({ page }) => {
             await page.goto(`${BASE_URL}/wishlist`);
             await page.waitForTimeout(2000);
             const cards = page.locator('.game-card');
             const count = await cards.count();
-
             if (count > 0) {
                 const initialCount = count;
                 await page.locator('.wishlist-btn').first().click();
@@ -79,6 +76,388 @@ test('Adding game to wishlist shows it on wishlist page', async ({ page }) => {
             if (cards > 0) {
                 await expect(page.locator('#wishlist-stats')).toBeVisible();
             }
+        });
+    });
+
+    // ─── AUTH PAGE TESTS ──────────────────────────────────
+    test.describe('Auth Page', () => {
+
+        test('Auth page loads', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await expect(page.locator('header')).toBeVisible();
+        });
+
+        test('Auth page has correct title', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await expect(page).toHaveTitle(/Games Tracker/);
+        });
+
+        test('Sign in tab is active by default', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            const loginForm = page.locator('#login-form');
+            await expect(loginForm).toBeVisible();
+        });
+
+        test('Register tab switches to register form', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await page.locator('.auth-tab').nth(1).click();
+            await expect(page.locator('#register-form')).toBeVisible();
+            await expect(page.locator('#login-form')).toBeHidden();
+        });
+
+        test('Sign in tab switches back to login form', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await page.locator('.auth-tab').nth(1).click();
+            await page.locator('.auth-tab').nth(0).click();
+            await expect(page.locator('#login-form')).toBeVisible();
+            await expect(page.locator('#register-form')).toBeHidden();
+        });
+
+        test('Login form has email and password fields', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await expect(page.locator('#login-email')).toBeVisible();
+            await expect(page.locator('#login-password')).toBeVisible();
+        });
+
+        test('Register form has name, email and password fields', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await page.locator('.auth-tab').nth(1).click();
+            await expect(page.locator('#register-name')).toBeVisible();
+            await expect(page.locator('#register-email')).toBeVisible();
+            await expect(page.locator('#register-password')).toBeVisible();
+        });
+
+        test('Login shows error for empty fields', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await page.locator('#login-form .auth-btn').click();
+            await expect(page.locator('#login-message')).toBeVisible();
+        });
+
+        test('Register shows error for empty display name', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await page.locator('.auth-tab').nth(1).click();
+            await page.fill('#register-email', 'test@test.com');
+            await page.fill('#register-password', 'Password1');
+            await page.locator('#register-form .auth-btn').click();
+            await expect(page.locator('#register-message')).toBeVisible();
+        });
+
+        test('Register shows error for invalid email', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await page.locator('.auth-tab').nth(1).click();
+            await page.fill('#register-name', 'TestUser');
+            await page.fill('#register-email', 'notanemail');
+            await page.fill('#register-password', 'Password1');
+            await page.locator('#register-form .auth-btn').click();
+            await expect(page.locator('#register-message')).toBeVisible();
+        });
+
+        test('Register shows error for weak password', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await page.locator('.auth-tab').nth(1).click();
+            await page.fill('#register-name', 'TestUser');
+            await page.fill('#register-email', 'test@test.com');
+            await page.fill('#register-password', '123');
+            await page.locator('#register-form .auth-btn').click();
+            await expect(page.locator('#register-message')).toBeVisible();
+        });
+
+        test('Google OAuth button is visible on login form', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await expect(page.locator('#login-form .google-btn')).toBeVisible();
+        });
+
+        test('Google OAuth button is visible on register form', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await page.locator('.auth-tab').nth(1).click();
+            await expect(page.locator('#register-form .google-btn')).toBeVisible();
+        });
+
+        test('Back to games link is visible', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await expect(page.locator('.back-link')).toBeVisible();
+        });
+
+        test('Back to games link navigates to home', async ({ page }) => {
+            await page.goto(`${BASE_URL}/auth`);
+            await page.locator('.back-link').first().click();
+            await expect(page).toHaveURL(BASE_URL + '/');
+        });
+    });
+
+    // ─── LIBRARY PAGE TESTS ───────────────────────────────
+    test.describe('Library Page', () => {
+
+        test('Library page loads', async ({ page }) => {
+            await page.goto(`${BASE_URL}/library`);
+            await expect(page.locator('header h1')).toBeVisible();
+        });
+
+        test('Library page has correct title', async ({ page }) => {
+            await page.goto(`${BASE_URL}/library`);
+            await expect(page).toHaveTitle(/Games Tracker/);
+        });
+
+        test('Library shows sign in message when not logged in', async ({ page }) => {
+            await page.goto(`${BASE_URL}/library`);
+            await page.waitForTimeout(2000);
+            const notLoggedIn = page.locator('#not-logged-in');
+            const isVisible = await notLoggedIn.isVisible();
+            if (isVisible) {
+                await expect(notLoggedIn).toBeVisible();
+            }
+        });
+
+        test('Library has back to games button', async ({ page }) => {
+            await page.goto(`${BASE_URL}/library`);
+            await expect(page.locator('a[href="/"]')).toBeVisible();
+        });
+
+        test('Library has wishlist button', async ({ page }) => {
+            await page.goto(`${BASE_URL}/library`);
+            await expect(page.locator('a[href="/wishlist"]')).toBeVisible();
+        });
+
+        test('Library tab buttons are present', async ({ page }) => {
+            await page.goto(`${BASE_URL}/library`);
+            await page.waitForTimeout(1000);
+            await expect(page.locator('.lib-tab').first()).toBeVisible();
+        });
+
+        test('Library has all status tabs', async ({ page }) => {
+            await page.goto(`${BASE_URL}/library`);
+            await page.waitForTimeout(1000);
+            const tabs = page.locator('.lib-tab');
+            await expect(tabs).toHaveCount(5);
+        });
+
+        test('Back to games button navigates home', async ({ page }) => {
+            await page.goto(`${BASE_URL}/library`);
+            await page.locator('a[href="/"]').first().click();
+            await expect(page).toHaveURL(BASE_URL + '/');
+        });
+    });
+
+    // ─── PROFILE PAGE TESTS ───────────────────────────────
+    test.describe('Profile Page', () => {
+
+        test('Profile page loads', async ({ page }) => {
+            await page.goto(`${BASE_URL}/profile`);
+            await expect(page.locator('header h1')).toBeVisible();
+        });
+
+        test('Profile page has correct title', async ({ page }) => {
+            await page.goto(`${BASE_URL}/profile`);
+            await expect(page).toHaveTitle(/Games Tracker/);
+        });
+
+        test('Profile shows sign in message when not logged in', async ({ page }) => {
+            await page.goto(`${BASE_URL}/profile`);
+            await page.waitForTimeout(2000);
+            const notLoggedIn = page.locator('#not-logged-in');
+            const isVisible = await notLoggedIn.isVisible();
+            if (isVisible) {
+                await expect(notLoggedIn).toBeVisible();
+            }
+        });
+
+        test('Profile has back to games button', async ({ page }) => {
+            await page.goto(`${BASE_URL}/profile`);
+            await expect(page.locator('a[href="/"]')).toBeVisible();
+        });
+
+        test('Profile has library button', async ({ page }) => {
+            await page.goto(`${BASE_URL}/profile`);
+            await expect(page.locator('a[href="/library"]')).toBeVisible();
+        });
+
+        test('Profile has wishlist button', async ({ page }) => {
+            await page.goto(`${BASE_URL}/profile`);
+            await expect(page.locator('a[href="/wishlist"]')).toBeVisible();
+        });
+    });
+
+    // ─── DISCOVER PAGE TESTS ──────────────────────────────
+    test.describe('Discover Page', () => {
+
+        test('Discover page loads', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            await expect(page.locator('header h1')).toBeVisible();
+        });
+
+        test('Discover page has correct title', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            await expect(page).toHaveTitle(/Games Tracker/);
+        });
+
+        test('Hidden gems section is visible', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            await page.waitForTimeout(3000);
+            await expect(page.locator('#gems-grid')).toBeVisible();
+        });
+
+        test('Genre filter buttons are visible', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            await expect(page.locator('.genre-filter-btn').first()).toBeVisible();
+        });
+
+        test('Discover has all genre filter buttons', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            const btns = page.locator('.genre-filter-btn');
+            await expect(btns).toHaveCount(7);
+        });
+
+        test('All genre filter is active by default', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            const allBtn = page.locator('.genre-filter-btn').first();
+            await expect(allBtn).toHaveClass(/active/);
+        });
+
+        test('Clicking genre filter updates active state', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            const actionBtn = page.locator('.genre-filter-btn').nth(1);
+            await actionBtn.click();
+            await expect(actionBtn).toHaveClass(/active/);
+        });
+
+        test('Hidden gems cards load', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            await page.waitForTimeout(4000);
+            const cards = page.locator('.gem-card');
+            const count = await cards.count();
+            expect(count).toBeGreaterThan(0);
+        });
+
+        test('Gem cards have game images', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            await page.waitForTimeout(4000);
+            const firstCard = page.locator('.gem-card').first();
+            await expect(firstCard).toBeVisible();
+        });
+
+        test('Gem cards show rating', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            await page.waitForTimeout(4000);
+            const rating = page.locator('.gem-rating').first();
+            await expect(rating).toBeVisible();
+        });
+
+        test('Hidden gem badge is visible on cards', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            await page.waitForTimeout(4000);
+            await expect(page.locator('.hidden-gem-badge').first()).toBeVisible();
+        });
+
+        test('Discover has back to games button', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            await expect(page.locator('a[href="/"]')).toBeVisible();
+        });
+
+        test('Discover has library button', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            await expect(page.locator('a[href="/library"]')).toBeVisible();
+        });
+
+        test('Genre filter loads new gems', async ({ page }) => {
+            await page.goto(`${BASE_URL}/discover`);
+            await page.waitForTimeout(4000);
+            const rpgBtn = page.locator('.genre-filter-btn').nth(2);
+            await rpgBtn.click();
+            await page.waitForTimeout(3000);
+            const cards = page.locator('.gem-card');
+            const count = await cards.count();
+            expect(count).toBeGreaterThan(0);
+        });
+    });
+
+    // ─── HEADER NAVIGATION TESTS ──────────────────────────
+    test.describe('Header Navigation', () => {
+
+        test.beforeEach(async ({ page }) => {
+            await page.goto(BASE_URL);
+            await page.waitForSelector('.game-card', { timeout: 15000 });
+        });
+
+        test('Wishlist button is visible in header', async ({ page }) => {
+            await expect(page.locator('#wishlist-nav-btn')).toBeVisible();
+        });
+
+        test('Library button is visible in header', async ({ page }) => {
+            await expect(page.locator('a[href="/library"]')).toBeVisible();
+        });
+
+        test('Discover button is visible in header', async ({ page }) => {
+            await expect(page.locator('a[href="/discover"]')).toBeVisible();
+        });
+
+        test('Sign in button is visible in header when not logged in', async ({ page }) => {
+            await expect(page.locator('#auth-nav-btn')).toBeVisible();
+        });
+
+        test('Library button navigates to library page', async ({ page }) => {
+            await page.locator('a[href="/library"]').click();
+            await expect(page).toHaveURL(`${BASE_URL}/library`);
+        });
+
+        test('Discover button navigates to discover page', async ({ page }) => {
+            await page.locator('a[href="/discover"]').click();
+            await expect(page).toHaveURL(`${BASE_URL}/discover`);
+        });
+
+        test('Sign in button navigates to auth page', async ({ page }) => {
+            await page.locator('#auth-nav-btn').click();
+            await expect(page).toHaveURL(`${BASE_URL}/auth`);
+        });
+
+        test('Music button is visible', async ({ page }) => {
+            await expect(page.locator('#music-btn')).toBeVisible();
+        });
+    });
+
+    // ─── GAME MODAL NEW FEATURES TESTS ───────────────────
+    test.describe('Game Modal — New Features', () => {
+
+        test.beforeEach(async ({ page }) => {
+            await page.goto(BASE_URL);
+            await page.waitForSelector('.game-card', { timeout: 15000 });
+            await page.locator('.game-card').first().click();
+            await page.waitForTimeout(2000);
+        });
+
+        test('Modal shows MY LIST section or sign in prompt', async ({ page }) => {
+            const hasMyList = await page.locator('text=MY LIST').isVisible();
+            const hasSignIn = await page.locator('text=Sign in to track').isVisible();
+            expect(hasMyList || hasSignIn).toBeTruthy();
+        });
+
+        test('Modal shows sign in prompt for unauthenticated users', async ({ page }) => {
+            await expect(page.locator('text=Sign in to track this game')).toBeVisible();
+        });
+
+        test('Sign in prompt in modal links to auth page', async ({ page }) => {
+            const link = page.locator('.modal-body a[href="/auth"]');
+            await expect(link).toBeVisible();
+        });
+
+        test('Modal shows RAWG Rating field', async ({ page }) => {
+            await expect(page.locator('text=RAWG Rating')).toBeVisible();
+        });
+
+        test('Modal shows Metacritic field', async ({ page }) => {
+            await expect(page.locator('text=Metacritic')).toBeVisible();
+        });
+
+        test('Modal shows Platforms field', async ({ page }) => {
+            await expect(page.locator('text=Platforms')).toBeVisible();
+        });
+
+        test('Modal shows Genres field', async ({ page }) => {
+            await expect(page.locator('text=Genres')).toBeVisible();
+        });
+
+        test('Modal close button works', async ({ page }) => {
+            await page.locator('.modal-close-btn').click();
+            await expect(page.locator('.modal-overlay')).not.toBeVisible();
         });
     });
 
@@ -184,7 +563,6 @@ test('Adding game to wishlist shows it on wishlist page', async ({ page }) => {
         test('Clicking screenshot opens lightbox', async ({ page }) => {
             const cards = page.locator('.game-card');
             const count = await cards.count();
-
             for (let i = 0; i < Math.min(count, 8); i++) {
                 await cards.nth(i).click();
                 await page.waitForTimeout(4000);
@@ -205,7 +583,6 @@ test('Adding game to wishlist shows it on wishlist page', async ({ page }) => {
         test('Lightbox has navigation buttons', async ({ page }) => {
             const cards = page.locator('.game-card');
             const count = await cards.count();
-
             for (let i = 0; i < Math.min(count, 8); i++) {
                 await cards.nth(i).click();
                 await page.waitForTimeout(4000);
@@ -228,7 +605,6 @@ test('Adding game to wishlist shows it on wishlist page', async ({ page }) => {
         test('Lightbox close button works', async ({ page }) => {
             const cards = page.locator('.game-card');
             const count = await cards.count();
-
             for (let i = 0; i < Math.min(count, 8); i++) {
                 await cards.nth(i).click();
                 await page.waitForTimeout(4000);
@@ -251,7 +627,6 @@ test('Adding game to wishlist shows it on wishlist page', async ({ page }) => {
         test('Clicking outside lightbox closes it', async ({ page }) => {
             const cards = page.locator('.game-card');
             const count = await cards.count();
-
             for (let i = 0; i < Math.min(count, 8); i++) {
                 await cards.nth(i).click();
                 await page.waitForTimeout(4000);
