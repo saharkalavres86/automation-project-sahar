@@ -698,4 +698,5 @@ test('Genre filter loads new gems', async ({ page }) => {
             await expect(page.locator('.modal-overlay')).toBeVisible();
         });
     });
+    });
 });
