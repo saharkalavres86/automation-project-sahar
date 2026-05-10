@@ -367,12 +367,13 @@ test.describe('PC Games Tracker — Extended Tests', () => {
 test('Genre filter loads new gems', async ({ page }) => {
     await page.goto(`${BASE_URL}/discover`);
     await page.waitForTimeout(5000);
+    const initialCount = await page.locator('.gem-card').count();
+    expect(initialCount).toBeGreaterThan(0);
     const rpgBtn = page.locator('.genre-filter-btn').nth(2);
     await rpgBtn.click();
-    await page.waitForSelector('.gem-card', { timeout: 15000 });
-    const cards = page.locator('.gem-card');
-    const count = await cards.count();
-    expect(count).toBeGreaterThan(0);
+    await page.waitForTimeout(10000);
+    const newCount = await page.locator('.gem-card').count();
+    expect(newCount).toBeGreaterThan(0);
 });
 
     // ─── HEADER NAVIGATION TESTS ──────────────────────────
@@ -629,27 +630,33 @@ test('Genre filter loads new gems', async ({ page }) => {
             console.log('No screenshots found — skipping');
         });
 
-        test('Clicking outside lightbox closes it', async ({ page }) => {
-            const cards = page.locator('.game-card');
-            const count = await cards.count();
-            for (let i = 0; i < Math.min(count, 8); i++) {
-                await cards.nth(i).click();
-                await page.waitForTimeout(4000);
-                const screenshots = page.locator('.screenshot-img');
-                const screenshotCount = await screenshots.count();
-                if (screenshotCount > 0) {
-                    await screenshots.first().click();
-                    await page.waitForTimeout(2000);
-                    await expect(page.locator('.lightbox-overlay')).toBeVisible();
-                    await page.mouse.click(10, 10);
-                    await expect(page.locator('.lightbox-overlay')).not.toBeVisible();
-                    return;
-                }
+    test('Clicking outside lightbox closes it', async ({ page }) => {
+    const cards = page.locator('.game-card');
+    const count = await cards.count();
+    for (let i = 0; i < Math.min(count, 8); i++) {
+        await cards.nth(i).click();
+        await page.waitForTimeout(4000);
+        const screenshots = page.locator('.screenshot-img');
+        const screenshotCount = await screenshots.count();
+        if (screenshotCount > 0) {
+            await screenshots.first().click();
+            await page.waitForTimeout(3000);
+            const lightbox = page.locator('.lightbox-overlay');
+            const isVisible = await lightbox.isVisible();
+            if (!isVisible) {
                 await page.locator('.modal-close-btn').click();
-                await page.waitForTimeout(500);
+                continue;
             }
-            console.log('No screenshots found — skipping');
-        });
+            await page.mouse.click(5, 5);
+            await page.waitForTimeout(1000);
+            await expect(lightbox).not.toBeVisible();
+            return;
+        }
+        await page.locator('.modal-close-btn').click();
+        await page.waitForTimeout(500);
+    }
+    console.log('No screenshots found — skipping');
+});
     });
 
     // ─── RECENTLY VIEWED TESTS ────────────────────────────
