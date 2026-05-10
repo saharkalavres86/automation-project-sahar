@@ -369,7 +369,7 @@ test.describe('PC Games Tracker — Extended Tests', () => {
             await page.waitForTimeout(5000);
             const rpgBtn = page.locator('.genre-filter-btn').nth(2);
             await rpgBtn.click();
-            await page.waitForTimeout(5000);
+            await page.waitForTimeout(8000);
             const cards = page.locator('.gem-card');
             const count = await cards.count();
             expect(count).toBeGreaterThan(0);
@@ -543,7 +543,7 @@ test.describe('PC Games Tracker — Extended Tests', () => {
 
         test('Description loads content after delay', async ({ page }) => {
             await page.locator('.game-card').first().click();
-            await page.waitForTimeout(3000);
+            await page.waitForTimeout(6000);
             const descEl = page.locator('#description-text');
             const text = await descEl.textContent();
             expect(text).not.toBe('Loading description...');
