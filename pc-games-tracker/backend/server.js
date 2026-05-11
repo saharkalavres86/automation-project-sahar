@@ -413,6 +413,64 @@ app.get('/api/discover/genre', async (req, res) => {
     }
 });
 
+// ─── USER REVIEWS ─────────────────────────────────────────
+app.get('/api/reviews', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM user_reviews WHERE user_id = $1 ORDER BY updated_at DESC',
+            [req.userId]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/reviews/:rawg_id', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT ur.*, u.display_name, u.avatar_url
+            FROM user_reviews ur
+            JOIN users u ON ur.user_id = u.id
+            WHERE ur.rawg_id = $1
+            ORDER BY ur.created_at DESC
+        `, [req.params.rawg_id]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/reviews', authenticate, async (req, res) => {
+    try {
+        const { rawg_id, game_name, review_text } = req.body;
+        if (!rawg_id || !review_text?.trim()) {
+            return res.status(400).json({ error: 'rawg_id and review_text are required' });
+        }
+        await pool.query(`
+            INSERT INTO user_reviews (user_id, rawg_id, game_name, review_text)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (user_id, rawg_id) DO UPDATE SET review_text = $4, updated_at = NOW()
+        `, [req.userId, rawg_id, game_name, review_text.trim()]);
+        res.json({ message: '✅ Review saved' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/reviews/:rawg_id', authenticate, async (req, res) => {
+    try {
+        await pool.query(
+            'DELETE FROM user_reviews WHERE rawg_id = $1 AND user_id = $2',
+            [req.params.rawg_id, req.userId]
+        );
+        res.json({ message: '✅ Review deleted' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 // ─── SERVE FRONTEND PAGES ────────────────────────────────
 app.get('/wishlist', (req, res) => {
     res.sendFile(join(__dirname, '../wishlist.html'));
