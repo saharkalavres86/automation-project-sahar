@@ -474,4 +474,36 @@ app.get('/api/discover/genre', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+
+// ─── RAWG GAME SEARCH ─────────────────────────────────────
+app.get('/api/search-rawg', async (req, res) => {
+    try {
+        const { query } = req.query;
+        if (!query || query.length < 2) return res.json({ games: [] });
+
+        const API_KEY = process.env.RAWG_API_KEY;
+        const response = await fetch(
+            `https://api.rawg.io/api/games?key=${API_KEY}&search=${encodeURIComponent(query)}&page_size=10&ordering=-rating`
+        );
+        const data = await response.json();
+
+        const games = (data.results || []).map(g => ({
+            rawg_id: g.id,
+            name: g.name,
+            release_date: g.released,
+            rating: g.rating,
+            background_image: g.background_image,
+            genres: g.genres?.map(x => x.name).join(', ') || '',
+            platforms: g.platforms?.map(x => x.platform.name).join(', ') || '',
+            metacritic: g.metacritic
+        }));
+
+        res.json({ games });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
+
 });
