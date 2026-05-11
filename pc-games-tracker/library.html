@@ -403,6 +403,7 @@
         let allUserGames = [];
         let currentFilter = 'all';
         let searchTimeout = null;
+        const searchResultsMap = new Map();
 
         function getToken() { return localStorage.getItem('token'); }
         function authHeaders() {
@@ -553,40 +554,33 @@
         searchInput.addEventListener('input', (e) => {
             clearTimeout(searchTimeout);
             const query = e.target.value.trim();
-
-            if (query.length < 2) {
-                dropdown.style.display = 'none';
-                return;
-            }
-
+            if (query.length < 2) { dropdown.style.display = 'none'; return; }
             dropdown.style.display = 'block';
             dropdown.innerHTML = '<div class="search-loading">🔍 Searching...</div>';
             searchTimeout = setTimeout(() => searchGames(query), 400);
         });
 
-        // Close dropdown only when clicking completely outside the search wrapper
+        // Close when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.game-search-input-wrapper')) {
                 dropdown.style.display = 'none';
             }
         });
 
-        // Event delegation — handle all button clicks inside dropdown here
+        // Event delegation — intercept all clicks inside dropdown
         dropdown.addEventListener('click', (e) => {
-            e.stopPropagation();
+            e.stopPropagation(); // prevent document click from closing dropdown
             const btn = e.target.closest('.add-to-library-btn');
-            if (btn) {
-                const game = JSON.parse(btn.dataset.game);
-                const status = btn.dataset.status;
-                addToLibrary(game, status);
-            }
+            if (!btn) return;
+            const rawgId = parseInt(btn.dataset.rawgId);
+            const status = btn.dataset.status;
+            const game = searchResultsMap.get(rawgId);
+            if (game) addToLibrary(game, status);
         });
 
         async function searchGames(query) {
             try {
-                const res = await fetch(`/api/search-rawg?query=${encodeURIComponent(query)}`, {
-                    headers: authHeaders()
-                });
+                const res = await fetch(`/api/search-rawg?query=${encodeURIComponent(query)}`, { headers: authHeaders() });
                 const data = await res.json();
                 renderSearchResults(data.games || []);
             } catch (err) {
@@ -595,6 +589,9 @@
         }
 
         function renderSearchResults(games) {
+            searchResultsMap.clear();
+            games.forEach(g => searchResultsMap.set(g.rawg_id, g));
+
             if (games.length === 0) {
                 dropdown.innerHTML = '<div class="search-loading">No games found.</div>';
                 return;
@@ -607,8 +604,6 @@
                 const currentStatus = isInLibrary
                     ? allUserGames.find(g => g.rawg_id === game.rawg_id)?.status
                     : null;
-
-                const safeGame = JSON.stringify(game).replace(/"/g, '&quot;');
 
                 return `
                     <div class="search-result-item">
@@ -630,8 +625,8 @@
                                 : Object.entries(statusLabels).map(([s, label]) => `
                                     <button class="add-to-library-btn"
                                         style="border-color:${statusColors[s]};color:${statusColors[s]};"
-                                        data-status="${s}"
-                                        data-game="${safeGame}">
+                                        data-rawg-id="${game.rawg_id}"
+                                        data-status="${s}">
                                         ${label}
                                     </button>
                                 `).join('')
@@ -649,15 +644,11 @@
                     headers: authHeaders(),
                     body: JSON.stringify({ ...game, status })
                 });
-
                 allUserGames.push({ ...game, status, added_at: new Date().toISOString() });
                 renderStats();
                 renderGames(currentFilter);
-
-                // Refresh dropdown to show updated state
                 const query = searchInput.value.trim();
                 if (query.length >= 2) searchGames(query);
-
             } catch (err) {
                 console.error('Failed to add game:', err);
             }
