@@ -234,10 +234,7 @@ function openLightbox(src, allScreenshots) {
 
 // ─── WISHLIST ────────────────────────────────────────────
 async function loadWishlist() {
-    if (!isLoggedIn()) {
-        wishlist = new Set();
-        return;
-    }
+    if (!isLoggedIn()) { wishlist = new Set(); return; }
     try {
         const response = await fetch(`${BASE_URL}/wishlist`, { headers: authHeaders() });
         if (response.status === 401) { wishlist = new Set(); return; }
@@ -526,18 +523,23 @@ async function openModal(game) {
 
     let currentStatus = null;
     let currentRating = null;
+    let currentReview = null;
     if (isLoggedIn()) {
         try {
-            const [gamesRes, ratingsRes] = await Promise.all([
+            const [gamesRes, ratingsRes, reviewsRes] = await Promise.all([
                 fetch(`${BASE_URL}/user-games`, { headers: authHeaders() }),
-                fetch(`${BASE_URL}/ratings`, { headers: authHeaders() })
+                fetch(`${BASE_URL}/ratings`, { headers: authHeaders() }),
+                fetch(`${BASE_URL}/reviews`, { headers: authHeaders() })
             ]);
             const userGames = await gamesRes.json();
             const userRatingsData = await ratingsRes.json();
+            const userReviewsData = await reviewsRes.json();
             const foundGame = userGames.find(g => g.rawg_id === game.rawg_id);
             const foundRating = userRatingsData.find(r => r.rawg_id === game.rawg_id);
+            const foundReview = userReviewsData.find(r => r.rawg_id === game.rawg_id);
             if (foundGame) currentStatus = foundGame.status;
             if (foundRating) currentRating = foundRating.rating;
+            if (foundReview) currentReview = foundReview.review_text;
         } catch {}
     }
 
@@ -590,6 +592,25 @@ async function openModal(game) {
         </div>
     ` : '';
 
+    const reviewSection = isLoggedIn() ? `
+        <div style="margin-top:1.2rem;border-top:1px solid rgba(120,40,200,0.3);padding-top:1.2rem;">
+            <p style="color:#00c8ff;font-family:'Orbitron',sans-serif;font-size:0.8rem;letter-spacing:1px;margin-bottom:0.8rem;">✍️ MY REVIEW</p>
+            <textarea id="review-text-${game.rawg_id}"
+                placeholder="Write your review..."
+                style="width:100%;min-height:100px;padding:0.8rem;border-radius:8px;border:2px solid rgba(120,40,200,0.4);background:rgba(120,40,200,0.08);color:#fff;font-family:'Rajdhani',sans-serif;font-size:0.95rem;font-weight:600;resize:vertical;outline:none;box-sizing:border-box;transition:all 0.3s;"
+                onfocus="this.style.borderColor='#00c8ff';this.style.background='rgba(0,200,255,0.08)'"
+                onblur="this.style.borderColor='rgba(120,40,200,0.4)';this.style.background='rgba(120,40,200,0.08)'"
+            >${currentReview || ''}</textarea>
+            <div style="display:flex;gap:0.5rem;margin-top:0.5rem;justify-content:flex-end;">
+                ${currentReview ? `
+                    <button id="delete-review-${game.rawg_id}" style="background:transparent;border:1px solid #ff3c78;color:#ff3c78;padding:0.4rem 1rem;border-radius:20px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.8rem;font-weight:700;">🗑️ Delete</button>
+                ` : ''}
+                <button id="save-review-${game.rawg_id}" style="background:linear-gradient(90deg,#7828c8,#00c8ff);border:none;color:#fff;padding:0.4rem 1.2rem;border-radius:20px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:0.8rem;font-weight:700;letter-spacing:0.5px;">💾 Save Review</button>
+            </div>
+            <p id="review-msg-${game.rawg_id}" style="color:#00c8ff;font-family:'Rajdhani',sans-serif;font-size:0.8rem;margin-top:0.4rem;display:none;"></p>
+        </div>
+    ` : '';
+
     const overlay = document.createElement('div');
     overlay.className = 'modal-overlay';
     overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
@@ -609,6 +630,7 @@ async function openModal(game) {
                 <p>🎮 <strong>Metacritic:</strong> ${game.metacritic || 'Not rated yet'}</p>
                 ${statusButtons}
                 ${ratingSection}
+                ${reviewSection}
                 <div id="game-description" style="margin-top:1rem;">
                     <p><strong style="color:#00c8ff;">📖 Description:</strong></p>
                     <p id="description-text" style="margin-top:0.5rem;color:#888;font-style:italic;font-size:0.9rem;line-height:1.7;">Loading description...</p>
@@ -627,6 +649,7 @@ async function openModal(game) {
     document.body.appendChild(overlay);
 
     if (isLoggedIn()) {
+        // Star rating events
         const starsContainer = document.getElementById(`stars-${game.rawg_id}`);
         if (starsContainer) {
             const stars = starsContainer.querySelectorAll('span');
@@ -659,6 +682,45 @@ async function openModal(game) {
                     clearBtn.remove();
                 });
             }
+        }
+
+        // Review events
+        const saveReviewBtn = document.getElementById(`save-review-${game.rawg_id}`);
+        const deleteReviewBtn = document.getElementById(`delete-review-${game.rawg_id}`);
+        const reviewMsg = document.getElementById(`review-msg-${game.rawg_id}`);
+
+        if (saveReviewBtn) {
+            saveReviewBtn.addEventListener('click', async () => {
+                const text = document.getElementById(`review-text-${game.rawg_id}`).value.trim();
+                if (!text) return;
+                await fetch(`${BASE_URL}/reviews`, {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ rawg_id: game.rawg_id, game_name: game.name, review_text: text })
+                });
+                if (reviewMsg) {
+                    reviewMsg.textContent = '✅ Review saved!';
+                    reviewMsg.style.display = 'block';
+                    setTimeout(() => reviewMsg.style.display = 'none', 2000);
+                }
+                playSound('wishlist');
+            });
+        }
+
+        if (deleteReviewBtn) {
+            deleteReviewBtn.addEventListener('click', async () => {
+                await fetch(`${BASE_URL}/reviews/${game.rawg_id}`, {
+                    method: 'DELETE',
+                    headers: authHeaders()
+                });
+                document.getElementById(`review-text-${game.rawg_id}`).value = '';
+                deleteReviewBtn.remove();
+                if (reviewMsg) {
+                    reviewMsg.textContent = '🗑️ Review deleted.';
+                    reviewMsg.style.display = 'block';
+                    setTimeout(() => reviewMsg.style.display = 'none', 2000);
+                }
+            });
         }
     }
 
