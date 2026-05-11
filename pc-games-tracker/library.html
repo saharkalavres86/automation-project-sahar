@@ -566,11 +566,20 @@
         });
 
         // Use mousedown instead of click so dropdown closes AFTER button clicks register
-        document.addEventListener('mousedown', (e) => {
-            if (!e.target.closest('.game-search-input-wrapper')) {
-                dropdown.style.display = 'none';
-            }
-        });
+     let isClickingDropdown = false;
+
+dropdown.addEventListener('mousedown', () => {
+    isClickingDropdown = true;
+});
+
+document.addEventListener('mousedown', (e) => {
+    if (!e.target.closest('.game-search-input-wrapper')) {
+        if (!isClickingDropdown) {
+            dropdown.style.display = 'none';
+        }
+        isClickingDropdown = false;
+    }
+});
 
         async function searchGames(query) {
             try {
