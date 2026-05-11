@@ -561,25 +561,26 @@
 
             dropdown.style.display = 'block';
             dropdown.innerHTML = '<div class="search-loading">🔍 Searching...</div>';
-
             searchTimeout = setTimeout(() => searchGames(query), 400);
         });
 
-        // Use mousedown instead of click so dropdown closes AFTER button clicks register
-     let isClickingDropdown = false;
+        // Close dropdown only when clicking completely outside the search wrapper
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.game-search-input-wrapper')) {
+                dropdown.style.display = 'none';
+            }
+        });
 
-dropdown.addEventListener('mousedown', () => {
-    isClickingDropdown = true;
-});
-
-document.addEventListener('mousedown', (e) => {
-    if (!e.target.closest('.game-search-input-wrapper')) {
-        if (!isClickingDropdown) {
-            dropdown.style.display = 'none';
-        }
-        isClickingDropdown = false;
-    }
-});
+        // Event delegation — handle all button clicks inside dropdown here
+        dropdown.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const btn = e.target.closest('.add-to-library-btn');
+            if (btn) {
+                const game = JSON.parse(btn.dataset.game);
+                const status = btn.dataset.status;
+                addToLibrary(game, status);
+            }
+        });
 
         async function searchGames(query) {
             try {
@@ -607,6 +608,8 @@ document.addEventListener('mousedown', (e) => {
                     ? allUserGames.find(g => g.rawg_id === game.rawg_id)?.status
                     : null;
 
+                const safeGame = JSON.stringify(game).replace(/"/g, '&quot;');
+
                 return `
                     <div class="search-result-item">
                         ${game.background_image
@@ -627,7 +630,8 @@ document.addEventListener('mousedown', (e) => {
                                 : Object.entries(statusLabels).map(([s, label]) => `
                                     <button class="add-to-library-btn"
                                         style="border-color:${statusColors[s]};color:${statusColors[s]};"
-                                        onclick="addToLibrary(${JSON.stringify(game).replace(/"/g, '&quot;')}, '${s}')">
+                                        data-status="${s}"
+                                        data-game="${safeGame}">
                                         ${label}
                                     </button>
                                 `).join('')
