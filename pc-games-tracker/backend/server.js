@@ -474,6 +474,10 @@ app.get('/api/discover/genre', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+});
+
+// ─── RAWG GAME SEARCH ─────────────────────────────────────
+app.get('/api/search-rawg', async (req, res) => {
 
 // ─── RAWG GAME SEARCH ─────────────────────────────────────
 app.get('/api/search-rawg', async (req, res) => {
