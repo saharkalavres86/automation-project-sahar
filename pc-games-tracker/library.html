@@ -265,7 +265,6 @@
             align-items: center;
             gap: 0.8rem;
             padding: 0.7rem 1rem;
-            cursor: default;
             transition: background 0.2s;
             border-bottom: 1px solid rgba(120, 40, 200, 0.1);
         }
@@ -566,7 +565,8 @@
             searchTimeout = setTimeout(() => searchGames(query), 400);
         });
 
-        document.addEventListener('click', (e) => {
+        // Use mousedown instead of click so dropdown closes AFTER button clicks register
+        document.addEventListener('mousedown', (e) => {
             if (!e.target.closest('.game-search-input-wrapper')) {
                 dropdown.style.display = 'none';
             }
