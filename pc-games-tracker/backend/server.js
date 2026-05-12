@@ -784,3 +784,7 @@ app.delete('/api/notifications', authenticate, async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
+
+app.get('/user/:userId', (req, res) => {
+    res.sendFile(join(__dirname, '../user-profile.html'));
+});
