@@ -8,6 +8,9 @@
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        header { overflow: visible !important; }
+    </style>
 </head>
 <body>
     <header>
@@ -92,29 +95,31 @@
                     letter-spacing: 1px;
                     box-shadow: 0 0 15px rgba(255, 60, 120, 0.5);
                     transition: all 0.3s;
-                ">🔔 <span id="notif-count" style="display:none;background:#ff3c78;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.65rem;margin-left:0.2rem;"></span></button>
+                ">🔔 <span id="notif-count" style="display:none;background:#fff;color:#ff3c78;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.65rem;margin-left:0.2rem;font-weight:900;"></span></button>
 
                 <div id="notif-dropdown" style="
                     display: none;
-                    position: absolute;
-                    top: calc(100% + 8px);
-                    right: 0;
-                    width: 320px;
+                    position: fixed;
+                    top: 120px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    width: 360px;
+                    max-width: 90vw;
                     background: #1a1a2e;
                     border: 1px solid rgba(120,40,200,0.4);
                     border-radius: 12px;
-                    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-                    z-index: 1000;
+                    box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+                    z-index: 9999;
                     overflow: hidden;
                 ">
                     <div style="padding:0.8rem 1rem;border-bottom:1px solid rgba(120,40,200,0.2);display:flex;justify-content:space-between;align-items:center;">
                         <span style="font-family:'Orbitron',sans-serif;font-size:0.75rem;color:#00c8ff;letter-spacing:1px;">🔔 NOTIFICATIONS</span>
                         <div style="display:flex;gap:0.5rem;">
-                            <button onclick="markAllRead()" style="background:transparent;border:none;color:#555;font-family:'Rajdhani',sans-serif;font-size:0.75rem;cursor:pointer;">Mark all read</button>
-                            <button onclick="clearAllNotifications()" style="background:transparent;border:none;color:#555;font-family:'Rajdhani',sans-serif;font-size:0.75rem;cursor:pointer;">Clear all</button>
+                            <button onclick="markAllRead()" style="background:transparent;border:none;color:#888;font-family:'Rajdhani',sans-serif;font-size:0.75rem;cursor:pointer;font-weight:700;">Mark all read</button>
+                            <button onclick="clearAllNotifications()" style="background:transparent;border:none;color:#888;font-family:'Rajdhani',sans-serif;font-size:0.75rem;cursor:pointer;font-weight:700;">Clear all</button>
                         </div>
                     </div>
-                    <div id="notif-list" style="max-height:360px;overflow-y:auto;"></div>
+                    <div id="notif-list" style="max-height:400px;overflow-y:auto;"></div>
                 </div>
             </div>
             <a href="/auth" id="auth-nav-btn" style="
@@ -237,7 +242,7 @@
             if (!list) return;
 
             if (notifications.length === 0) {
-                list.innerHTML = '<p style="padding:1.5rem;text-align:center;color:#555;font-family:\'Rajdhani\',sans-serif;">No notifications yet.</p>';
+                list.innerHTML = '<p style="padding:1.5rem;text-align:center;color:#555;font-family:\'Rajdhani\',sans-serif;font-size:0.9rem;">No notifications yet.</p>';
                 return;
             }
 
@@ -251,14 +256,14 @@
                 " onmouseover="this.style.background='rgba(120,40,200,0.15)'"
                    onmouseout="this.style.background='${n.is_read ? 'transparent' : 'rgba(120,40,200,0.08)'}'">
                     ${n.background_image
-                        ? `<img src="${n.background_image}" style="width:45px;height:30px;object-fit:cover;border-radius:4px;flex-shrink:0;" referrerpolicy="no-referrer">`
-                        : `<div style="width:45px;height:30px;background:#16213e;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;">🎮</div>`
+                        ? `<img src="${n.background_image}" style="width:50px;height:34px;object-fit:cover;border-radius:4px;flex-shrink:0;" referrerpolicy="no-referrer">`
+                        : `<div style="width:50px;height:34px;background:#16213e;border-radius:4px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🎮</div>`
                     }
                     <div style="flex:1;min-width:0;">
-                        <p style="font-family:'Rajdhani',sans-serif;font-size:0.85rem;color:${n.is_read ? '#888' : '#fff'};margin:0;line-height:1.4;">${n.message}</p>
+                        <p style="font-family:'Rajdhani',sans-serif;font-size:0.875rem;color:${n.is_read ? '#888' : '#fff'};margin:0;line-height:1.4;">${n.message}</p>
                         <p style="font-family:'Rajdhani',sans-serif;font-size:0.72rem;color:#555;margin:0.2rem 0 0;">${timeAgo(n.created_at)}</p>
                     </div>
-                    ${!n.is_read ? '<div style="width:6px;height:6px;border-radius:50%;background:#7828c8;flex-shrink:0;margin-top:0.3rem;"></div>' : ''}
+                    ${!n.is_read ? '<div style="width:7px;height:7px;border-radius:50%;background:#7828c8;flex-shrink:0;margin-top:0.4rem;"></div>' : ''}
                 </div>
             `).join('');
         }

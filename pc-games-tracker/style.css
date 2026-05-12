@@ -20,6 +20,8 @@ header {
     overflow: hidden;
     border-bottom: 2px solid transparent;
     border-image: linear-gradient(90deg, #ff3c78, #7828c8, #00c8ff, #ff3c78) 1;
+    overflow: visible;
+
 }
 
 header::before {
