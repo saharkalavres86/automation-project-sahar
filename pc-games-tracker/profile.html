@@ -99,6 +99,28 @@
             color: #fff;
         }
 
+        .share-btn {
+            background: rgba(0, 200, 255, 0.1);
+            border: 2px solid #00c8ff;
+            color: #00c8ff;
+            padding: 0.6rem 1.5rem;
+            border-radius: 20px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 0.8rem;
+            margin-left: 0.5rem;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .share-btn:hover {
+            background: #00c8ff;
+            color: #000;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -169,9 +191,7 @@
             object-fit: cover;
         }
 
-        .recent-game-card-info {
-            padding: 0.6rem;
-        }
+        .recent-game-card-info { padding: 0.6rem; }
 
         .recent-game-card-info h4 {
             font-family: 'Rajdhani', sans-serif;
@@ -193,9 +213,7 @@
             display: inline-block;
         }
 
-        .completion-bar-container {
-            margin-bottom: 2rem;
-        }
+        .completion-bar-container { margin-bottom: 2rem; }
 
         .completion-bar-row {
             display: flex;
@@ -208,7 +226,7 @@
             font-family: 'Rajdhani', sans-serif;
             font-size: 0.85rem;
             font-weight: 700;
-            width: 100px;
+            width: 110px;
             flex-shrink: 0;
         }
 
@@ -261,58 +279,15 @@
         <h1>👤 My Profile</h1>
         <p>Your gaming identity</p>
         <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
-            <a href="/" style="
-                display: inline-block;
-                background: linear-gradient(90deg, #ff3c78, #7828c8);
-                color: white;
-                padding: 0.5rem 1.5rem;
-                border-radius: 20px;
-                font-family: 'Orbitron', sans-serif;
-                font-size: 0.75rem;
-                text-decoration: none;
-                letter-spacing: 1px;
-                box-shadow: 0 0 15px rgba(255, 60, 120, 0.5);
-            ">🎮 BACK TO GAMES</a>
-            <a href="/library" style="
-                display: inline-block;
-                background: linear-gradient(90deg, #00c8ff, #7828c8);
-                color: white;
-                padding: 0.5rem 1.5rem;
-                border-radius: 20px;
-                font-family: 'Orbitron', sans-serif;
-                font-size: 0.75rem;
-                text-decoration: none;
-                letter-spacing: 1px;
-                box-shadow: 0 0 15px rgba(0, 200, 255, 0.5);
-            ">📚 MY LIBRARY</a>
-            <a href="/wishlist" style="
-                display: inline-block;
-                background: linear-gradient(90deg, #7828c8, #00c8ff);
-                color: white;
-                padding: 0.5rem 1.5rem;
-                border-radius: 20px;
-                font-family: 'Orbitron', sans-serif;
-                font-size: 0.75rem;
-                text-decoration: none;
-                letter-spacing: 1px;
-                box-shadow: 0 0 15px rgba(120, 40, 200, 0.5);
-            ">🔖 MY WISHLIST</a>
+            <a href="/" style="display:inline-block;background:linear-gradient(90deg,#ff3c78,#7828c8);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;box-shadow:0 0 15px rgba(255,60,120,0.5);">🎮 BACK TO GAMES</a>
+            <a href="/library" style="display:inline-block;background:linear-gradient(90deg,#00c8ff,#7828c8);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;box-shadow:0 0 15px rgba(0,200,255,0.5);">📚 MY LIBRARY</a>
+            <a href="/wishlist" style="display:inline-block;background:linear-gradient(90deg,#7828c8,#00c8ff);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;box-shadow:0 0 15px rgba(120,40,200,0.5);">🔖 MY WISHLIST</a>
         </div>
     </header>
 
     <div id="not-logged-in" class="not-logged-in" style="display:none;">
         <p>Sign in to view your profile</p>
-        <a href="/auth" style="
-            display: inline-block;
-            background: linear-gradient(90deg, #ff3c78, #7828c8);
-            color: white;
-            padding: 0.7rem 2rem;
-            border-radius: 20px;
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.75rem;
-            text-decoration: none;
-            letter-spacing: 1px;
-        ">👤 SIGN IN</a>
+        <a href="/auth" style="display:inline-block;background:linear-gradient(90deg,#ff3c78,#7828c8);color:white;padding:0.7rem 2rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;">👤 SIGN IN</a>
     </div>
 
     <div id="profile-content" class="profile-container" style="display:none;">
@@ -324,7 +299,11 @@
                 <h2 id="profile-name"></h2>
                 <p id="profile-email"></p>
                 <p class="profile-joined" id="profile-joined"></p>
-                <button class="signout-btn" onclick="signOut()">🚪 SIGN OUT</button>
+                <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.8rem;">
+                    <button class="signout-btn" onclick="signOut()">🚪 SIGN OUT</button>
+                    <button class="share-btn" onclick="copyProfileLink()">🔗 SHARE PROFILE</button>
+                </div>
+                <p id="copy-msg" style="color:#00c8ff;font-family:'Rajdhani',sans-serif;font-size:0.8rem;margin-top:0.5rem;display:none;">✅ Profile link copied!</p>
             </div>
         </div>
 
@@ -357,6 +336,16 @@
                 localStorage.removeItem('user');
                 window.location.href = '/';
             }
+        }
+
+        function copyProfileLink() {
+            const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+            if (!user) return;
+            const link = `${window.location.origin}/user/${user.id}`;
+            navigator.clipboard.writeText(link);
+            const msg = document.getElementById('copy-msg');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 2000);
         }
 
         async function loadProfile() {

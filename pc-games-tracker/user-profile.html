@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>Player Profile — Games Tracker</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .profile-container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .profile-hero {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 20px;
+            border: 1px solid rgba(120, 40, 200, 0.4);
+            padding: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 0 40px rgba(120, 40, 200, 0.2);
+            flex-wrap: wrap;
+        }
+
+        .profile-avatar {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid #7828c8;
+            object-fit: cover;
+            box-shadow: 0 0 20px rgba(120, 40, 200, 0.5);
+            flex-shrink: 0;
+        }
+
+        .profile-avatar-placeholder {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            border: 3px solid #7828c8;
+            background: linear-gradient(135deg, #7828c8, #ff3c78);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            flex-shrink: 0;
+        }
+
+        .profile-info { flex: 1; }
+
+        .profile-info h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ff3c78, #7828c8, #00c8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.3rem;
+        }
+
+        .profile-info p {
+            color: #888;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.9rem;
+        }
+
+        .profile-actions {
+            display: flex;
+            gap: 0.8rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .follow-btn {
+            padding: 0.5rem 1.5rem;
+            border-radius: 20px;
+            border: 2px solid #7828c8;
+            background: transparent;
+            color: #7828c8;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .follow-btn.following {
+            background: #7828c8;
+            color: #fff;
+        }
+
+        .follow-btn:hover { opacity: 0.8; }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+            border: 1px solid rgba(120, 40, 200, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover { transform: translateY(-4px); }
+
+        .stat-number {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 900;
+            display: block;
+        }
+
+        .stat-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #888;
+            margin-top: 0.2rem;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            color: #00c8ff;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid rgba(0, 200, 255, 0.2);
+        }
+
+        .games-grid-public {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .game-card-public {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(120, 40, 200, 0.3);
+            transition: transform 0.2s;
+        }
+
+        .game-card-public:hover { transform: translateY(-4px); }
+
+        .game-card-public img {
+            width: 100%;
+            height: 90px;
+            object-fit: cover;
+        }
+
+        .game-card-public-info { padding: 0.6rem; }
+
+        .game-card-public-info h4 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 0.3rem;
+        }
+
+        .status-badge-small {
+            padding: 0.15rem 0.5rem;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            font-family: 'Rajdhani', sans-serif;
+            display: inline-block;
+        }
+
+        .not-found {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .not-found p {
+            color: #888;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .profile-container { padding: 1rem; }
+            .profile-hero { gap: 1rem; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
+            .games-grid-public { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>👤 Player Profile</h1>
+        <p>Games Tracker Community</p>
+        <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+            <a href="/" style="display:inline-block;background:linear-gradient(90deg,#ff3c78,#7828c8);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;box-shadow:0 0 15px rgba(255,60,120,0.5);">🎮 BACK TO GAMES</a>
+            <a href="/social" style="display:inline-block;background:linear-gradient(90deg,#7828c8,#ff3c78);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;box-shadow:0 0 15px rgba(120,40,200,0.5);">👥 SOCIAL</a>
+        </div>
+    </header>
+
+    <div id="not-found" class="not-found" style="display:none;">
+        <p>User not found.</p>
+        <a href="/" style="display:inline-block;background:linear-gradient(90deg,#ff3c78,#7828c8);color:white;padding:0.7rem 2rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;">🎮 BACK TO GAMES</a>
+    </div>
+
+    <div id="profile-content" class="profile-container" style="display:none;">
+
+        <div class="profile-hero">
+            <div id="profile-avatar"></div>
+            <div class="profile-info">
+                <h2 id="profile-name"></h2>
+                <p id="profile-joined"></p>
+                <div class="profile-actions">
+                    <button id="follow-btn" class="follow-btn" style="display:none;" onclick="toggleFollow()"></button>
+                    <button onclick="copyProfileLink()" style="
+                        padding:0.5rem 1.5rem;border-radius:20px;border:2px solid #00c8ff;
+                        background:transparent;color:#00c8ff;font-family:'Orbitron',sans-serif;
+                        font-size:0.7rem;letter-spacing:1px;cursor:pointer;transition:all 0.3s;
+                    ">🔗 SHARE</button>
+                </div>
+                <p id="copy-msg" style="color:#00c8ff;font-family:'Rajdhani',sans-serif;font-size:0.8rem;margin-top:0.5rem;display:none;">✅ Link copied!</p>
+            </div>
+        </div>
+
+        <p class="section-title">📊 STATS</p>
+        <div class="stats-grid" id="stats-grid"></div>
+
+        <p class="section-title">🎮 GAME COLLECTION</p>
+        <div class="games-grid-public" id="games-grid-public"></div>
+
+    </div>
+
+    <script>
+        const statusColors = { playing: '#00c8ff', completed: '#00ff88', backlog: '#7828c8', dropped: '#ff3c78' };
+        const statusLabels = { playing: '🎮 Playing', completed: '✅ Completed', backlog: '📋 Backlog', dropped: '❌ Dropped' };
+
+        function getToken() { return localStorage.getItem('token'); }
+        function isLoggedIn() { return !!getToken(); }
+        function authHeaders() {
+            return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${getToken()}` };
+        }
+
+        const userId = window.location.pathname.split('/').pop();
+        let isFollowing = false;
+
+        async function loadProfile() {
+            try {
+                const res = await fetch(`/api/users/${userId}`);
+                if (!res.ok) {
+                    document.getElementById('not-found').style.display = 'block';
+                    return;
+                }
+
+                const { user, games, followers, following } = await res.json();
+                document.getElementById('profile-content').style.display = 'block';
+
+                // Set page title
+                document.title = `${user.display_name} — Games Tracker`;
+
+                // Avatar
+                const avatarEl = document.getElementById('profile-avatar');
+                avatarEl.innerHTML = user.avatar_url
+                    ? `<img src="${user.avatar_url}" class="profile-avatar" referrerpolicy="no-referrer">`
+                    : `<div class="profile-avatar-placeholder">👤</div>`;
+
+                document.getElementById('profile-name').textContent = user.display_name;
+                document.getElementById('profile-joined').textContent = `Joined ${new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`;
+
+                // Show follow button if logged in and not own profile
+                const myUser = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+                if (isLoggedIn() && myUser && myUser.id !== user.id) {
+                    await checkFollowStatus();
+                    document.getElementById('follow-btn').style.display = 'inline-block';
+                }
+
+                // Stats
+                const counts = { playing: 0, completed: 0, backlog: 0, dropped: 0 };
+                games.forEach(g => counts[g.status]++);
+
+                document.getElementById('stats-grid').innerHTML = `
+                    <div class="stat-card">
+                        <span class="stat-number" style="background:linear-gradient(90deg,#ff3c78,#7828c8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${games.length}</span>
+                        <span class="stat-label">Games</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" style="color:#00c8ff;">${counts.playing}</span>
+                        <span class="stat-label">Playing</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" style="color:#00ff88;">${counts.completed}</span>
+                        <span class="stat-label">Completed</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" style="color:#7828c8;">${counts.backlog}</span>
+                        <span class="stat-label">Backlog</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" style="color:#ff3c78;">${counts.dropped}</span>
+                        <span class="stat-label">Dropped</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" style="color:#ccc;">${followers}</span>
+                        <span class="stat-label">Followers</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-number" style="color:#ccc;">${following}</span>
+                        <span class="stat-label">Following</span>
+                    </div>
+                `;
+
+                // Games
+                const grid = document.getElementById('games-grid-public');
+                if (games.length === 0) {
+                    grid.innerHTML = '<p style="color:#555;font-family:\'Rajdhani\',sans-serif;font-size:1rem;">No games in collection yet.</p>';
+                } else {
+                    grid.innerHTML = games.slice(0, 12).map(game => `
+                        <div class="game-card-public">
+                            ${game.background_image
+                                ? `<img src="${game.background_image}" alt="${game.name}" referrerpolicy="no-referrer">`
+                                : `<div style="width:100%;height:90px;background:linear-gradient(135deg,#1a1a2e,#7828c8);display:flex;align-items:center;justify-content:center;font-size:2rem;">🎮</div>`
+                            }
+                            <div class="game-card-public-info">
+                                <h4>${game.name}</h4>
+                                <span class="status-badge-small" style="background:${statusColors[game.status]};color:${game.status === 'backlog' ? '#fff' : '#000'};">
+                                    ${statusLabels[game.status]}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+
+            } catch (err) {
+                document.getElementById('not-found').style.display = 'block';
+                console.error('Failed to load profile:', err);
+            }
+        }
+
+        async function checkFollowStatus() {
+            try {
+                const res = await fetch('/api/following', { headers: authHeaders() });
+                const following = await res.json();
+                isFollowing = following.some(u => u.id === parseInt(userId));
+                updateFollowBtn();
+            } catch {}
+        }
+
+        function updateFollowBtn() {
+            const btn = document.getElementById('follow-btn');
+            if (isFollowing) {
+                btn.textContent = '✓ FOLLOWING';
+                btn.classList.add('following');
+            } else {
+                btn.textContent = '+ FOLLOW';
+                btn.classList.remove('following');
+            }
+        }
+
+        async function toggleFollow() {
+            try {
+                if (isFollowing) {
+                    await fetch(`/api/follow/${userId}`, { method: 'DELETE', headers: authHeaders() });
+                    isFollowing = false;
+                } else {
+                    await fetch(`/api/follow/${userId}`, { method: 'POST', headers: authHeaders() });
+                    isFollowing = true;
+                }
+                updateFollowBtn();
+            } catch (err) {
+                console.error('Failed to toggle follow:', err);
+            }
+        }
+
+        function copyProfileLink() {
+            navigator.clipboard.writeText(window.location.href);
+            const msg = document.getElementById('copy-msg');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 2000);
+        }
+
+        loadProfile();
+    </script>
+</body>
+</html>
