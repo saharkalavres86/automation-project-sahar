@@ -556,3 +556,147 @@ app.listen(PORT, async () => {
         console.error('❌ Initial fetch failed:', error.message);
     }
 });
+
+// ─── SOCIAL / FRIENDS ─────────────────────────────────────
+
+// Follow a user
+app.post('/api/follow/:userId', authenticate, async (req, res) => {
+    try {
+        const followingId = parseInt(req.params.userId);
+        if (followingId === req.userId) {
+            return res.status(400).json({ error: 'Cannot follow yourself' });
+        }
+        await pool.query(`
+            INSERT INTO friendships (follower_id, following_id)
+            VALUES ($1, $2)
+            ON CONFLICT DO NOTHING
+        `, [req.userId, followingId]);
+        res.json({ message: '✅ Following!' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Unfollow a user
+app.delete('/api/follow/:userId', authenticate, async (req, res) => {
+    try {
+        await pool.query(
+            'DELETE FROM friendships WHERE follower_id = $1 AND following_id = $2',
+            [req.userId, parseInt(req.params.userId)]
+        );
+        res.json({ message: '✅ Unfollowed' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get who I'm following
+app.get('/api/following', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.display_name, u.avatar_url, f.created_at
+            FROM friendships f
+            JOIN users u ON f.following_id = u.id
+            WHERE f.follower_id = $1
+            ORDER BY f.created_at DESC
+        `, [req.userId]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get my followers
+app.get('/api/followers', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT u.id, u.display_name, u.avatar_url, f.created_at
+            FROM friendships f
+            JOIN users u ON f.follower_id = u.id
+            WHERE f.following_id = $1
+            ORDER BY f.created_at DESC
+        `, [req.userId]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get social feed (recent activity from people I follow)
+app.get('/api/feed', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT
+                ug.rawg_id, ug.name, ug.background_image, ug.status, ug.genres,
+                ug.added_at,
+                u.id as user_id, u.display_name, u.avatar_url
+            FROM user_games ug
+            JOIN users u ON ug.user_id = u.id
+            WHERE ug.user_id IN (
+                SELECT following_id FROM friendships WHERE follower_id = $1
+            )
+            ORDER BY ug.added_at DESC
+            LIMIT 30
+        `, [req.userId]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Search users to follow
+app.get('/api/users/search', authenticate, async (req, res) => {
+    try {
+        const { query } = req.query;
+        if (!query || query.length < 2) return res.json([]);
+
+        const result = await pool.query(`
+            SELECT u.id, u.display_name, u.avatar_url,
+                EXISTS(
+                    SELECT 1 FROM friendships
+                    WHERE follower_id = $1 AND following_id = u.id
+                ) as is_following
+            FROM users u
+            WHERE u.id != $1
+            AND u.display_name ILIKE $2
+            LIMIT 10
+        `, [req.userId, `%${query}%`]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get public user profile
+app.get('/api/users/:userId', async (req, res) => {
+    try {
+        const userResult = await pool.query(
+            'SELECT id, display_name, avatar_url, created_at FROM users WHERE id = $1',
+            [req.params.userId]
+        );
+        if (userResult.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = userResult.rows[0];
+
+        const [gamesResult, followersResult, followingResult] = await Promise.all([
+            pool.query('SELECT * FROM user_games WHERE user_id = $1 ORDER BY added_at DESC', [user.id]),
+            pool.query('SELECT COUNT(*) FROM friendships WHERE following_id = $1', [user.id]),
+            pool.query('SELECT COUNT(*) FROM friendships WHERE follower_id = $1', [user.id])
+        ]);
+
+        res.json({
+            user,
+            games: gamesResult.rows,
+            followers: parseInt(followersResult.rows[0].count),
+            following: parseInt(followingResult.rows[0].count)
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/social', (req, res) => {
+    res.sendFile(join(__dirname, '../social.html'));
+});
