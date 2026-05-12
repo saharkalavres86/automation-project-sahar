@@ -282,12 +282,12 @@ app.get('/api/user-games', authenticate, async (req, res) => {
 
 app.post('/api/user-games', authenticate, async (req, res) => {
     try {
-        const { rawg_id, name, background_image, release_date, rating, genres, status } = req.body;
+        const { rawg_id, name, background_image, release_date, rating, genres, status, completion } = req.body;
         await pool.query(`
-            INSERT INTO user_games (user_id, rawg_id, name, background_image, release_date, rating, genres, status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            ON CONFLICT (user_id, rawg_id) DO UPDATE SET status = $8
-        `, [req.userId, rawg_id, name, background_image, release_date, rating, genres, status]);
+            INSERT INTO user_games (user_id, rawg_id, name, background_image, release_date, rating, genres, status, completion)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+            ON CONFLICT (user_id, rawg_id) DO UPDATE SET status = $8, completion = $9
+        `, [req.userId, rawg_id, name, background_image, release_date, rating, genres, status, completion || 0]);
         res.json({ message: '✅ Game status updated' });
     } catch (error) {
         res.status(500).json({ error: error.message });
