@@ -159,6 +159,44 @@ app.post('/api/refresh', async (req, res) => {
     }
 });
 
+// Generate release notifications for wishlisted games
+const wishlistItems = await pool.query(`
+    SELECT w.*, w.user_id
+    FROM wishlist w
+    WHERE w.release_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+`);
+
+for (const item of wishlistItems.rows) {
+    const daysLeft = Math.ceil((new Date(item.release_date) - new Date()) / (1000 * 60 * 60 * 24));
+    const message = daysLeft === 0
+        ? `🔥 ${item.name} is releasing TODAY!`
+        : `⏳ ${item.name} releases in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}!`;
+
+    await pool.query(`
+        INSERT INTO notifications (user_id, type, message, rawg_id, game_name, background_image)
+        VALUES ($1, 'release', $2, $3, $4, $5)
+        ON CONFLICT DO NOTHING
+    `, [item.user_id, message, item.rawg_id, item.name, item.background_image]);
+}
+
+// Generate friend activity notifications
+const recentActivity = await pool.query(`
+    SELECT ug.*, u.display_name,
+        f.follower_id as notify_user_id
+    FROM user_games ug
+    JOIN users u ON ug.user_id = u.id
+    JOIN friendships f ON f.following_id = ug.user_id
+    WHERE ug.added_at >= NOW() - INTERVAL '1 day'
+`);
+
+for (const activity of recentActivity.rows) {
+    const message = `👥 ${activity.display_name} marked ${activity.name} as ${activity.status}`;
+    await pool.query(`
+        INSERT INTO notifications (user_id, type, message, rawg_id, game_name, background_image)
+        VALUES ($1, 'friend_activity', $2, $3, $4, $5)
+    `, [activity.notify_user_id, message, activity.rawg_id, activity.name, activity.background_image]);
+}
+
 // ─── STATS ROUTE ─────────────────────────────────────────
 app.get('/api/stats', async (req, res) => {
     try {
@@ -699,4 +737,50 @@ app.get('/api/users/:userId', async (req, res) => {
 
 app.get('/social', (req, res) => {
     res.sendFile(join(__dirname, '../social.html'));
+});
+
+// ─── NOTIFICATIONS ─────────────────────────────────────────
+app.get('/api/notifications', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM notifications WHERE user_id = $1 ORDER BY created_at DESC LIMIT 20',
+            [req.userId]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/notifications/read', authenticate, async (req, res) => {
+    try {
+        await pool.query(
+            'UPDATE notifications SET is_read = TRUE WHERE user_id = $1',
+            [req.userId]
+        );
+        res.json({ message: '✅ All notifications marked as read' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/notifications/read/:id', authenticate, async (req, res) => {
+    try {
+        await pool.query(
+            'UPDATE notifications SET is_read = TRUE WHERE id = $1 AND user_id = $2',
+            [req.params.id, req.userId]
+        );
+        res.json({ message: '✅ Notification marked as read' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/notifications', authenticate, async (req, res) => {
+    try {
+        await pool.query('DELETE FROM notifications WHERE user_id = $1', [req.userId]);
+        res.json({ message: '✅ All notifications cleared' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
