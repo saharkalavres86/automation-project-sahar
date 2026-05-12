@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <title>Player Profile — Games Tracker</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎮</text></svg>">
     <style>
         .profile-container {
             max-width: 900px;
@@ -272,10 +274,8 @@
                 const { user, games, followers, following } = await res.json();
                 document.getElementById('profile-content').style.display = 'block';
 
-                // Set page title
                 document.title = `${user.display_name} — Games Tracker`;
 
-                // Avatar
                 const avatarEl = document.getElementById('profile-avatar');
                 avatarEl.innerHTML = user.avatar_url
                     ? `<img src="${user.avatar_url}" class="profile-avatar" referrerpolicy="no-referrer">`
@@ -284,14 +284,12 @@
                 document.getElementById('profile-name').textContent = user.display_name;
                 document.getElementById('profile-joined').textContent = `Joined ${new Date(user.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long' })}`;
 
-                // Show follow button if logged in and not own profile
                 const myUser = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
                 if (isLoggedIn() && myUser && myUser.id !== user.id) {
                     await checkFollowStatus();
                     document.getElementById('follow-btn').style.display = 'inline-block';
                 }
 
-                // Stats
                 const counts = { playing: 0, completed: 0, backlog: 0, dropped: 0 };
                 games.forEach(g => counts[g.status]++);
 
@@ -326,7 +324,6 @@
                     </div>
                 `;
 
-                // Games
                 const grid = document.getElementById('games-grid-public');
                 if (games.length === 0) {
                     grid.innerHTML = '<p style="color:#555;font-family:\'Rajdhani\',sans-serif;font-size:1rem;">No games in collection yet.</p>';
