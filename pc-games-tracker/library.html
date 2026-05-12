@@ -167,6 +167,85 @@
 
         .remove-btn:hover { border-color: #ff3c78; color: #ff3c78; }
 
+        /* ── COMPLETION BAR ── */
+        .completion-section {
+            margin-top: 0.8rem;
+            padding-top: 0.8rem;
+            border-top: 1px solid rgba(120, 40, 200, 0.2);
+        }
+
+        .completion-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.4rem;
+        }
+
+        .completion-label {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.75rem;
+            color: #888;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .completion-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #00c8ff;
+        }
+
+        .completion-slider {
+            width: 100%;
+            -webkit-appearance: none;
+            appearance: none;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.05);
+            outline: none;
+            cursor: pointer;
+        }
+
+        .completion-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #00c8ff;
+            cursor: pointer;
+            box-shadow: 0 0 6px rgba(0, 200, 255, 0.6);
+            transition: transform 0.1s;
+        }
+
+        .completion-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+        .completion-slider::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #00c8ff;
+            cursor: pointer;
+            border: none;
+        }
+
+        .completion-bar-track {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 0.3rem;
+        }
+
+        .completion-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #7828c8, #00c8ff);
+            transition: width 0.3s ease;
+        }
+
         .empty-state {
             text-align: center;
             padding: 4rem 2rem;
@@ -220,9 +299,7 @@
             text-align: center;
         }
 
-        .game-search-input-wrapper {
-            position: relative;
-        }
+        .game-search-input-wrapper { position: relative; }
 
         .game-search-input {
             width: 100%;
@@ -371,17 +448,12 @@
     <div id="library-content">
         <div class="library-stats" id="library-stats"></div>
 
-        <!-- GAME SEARCH -->
         <div class="game-search-section" id="game-search-section">
             <p class="game-search-title">🔍 ADD ANY GAME TO YOUR LIBRARY</p>
             <div class="game-search-input-wrapper">
-                <input
-                    type="text"
-                    class="game-search-input"
-                    id="game-search-input"
+                <input type="text" class="game-search-input" id="game-search-input"
                     placeholder="Search any game... (e.g. The Witcher 3, Red Dead Redemption)"
-                    autocomplete="off"
-                >
+                    autocomplete="off">
                 <div class="search-results-dropdown" id="search-results-dropdown"></div>
             </div>
         </div>
@@ -403,6 +475,7 @@
         let allUserGames = [];
         let currentFilter = 'all';
         let searchTimeout = null;
+        let completionTimeouts = {};
         const searchResultsMap = new Map();
 
         function getToken() { return localStorage.getItem('token'); }
@@ -484,7 +557,11 @@
                 return;
             }
 
-            grid.innerHTML = filtered.map(game => `
+            grid.innerHTML = filtered.map(game => {
+                const completion = game.completion || 0;
+                const showCompletion = game.status === 'playing' || game.status === 'completed';
+
+                return `
                 <div class="library-card" id="card-${game.rawg_id}">
                     ${game.background_image
                         ? `<img src="${game.background_image}" alt="${game.name}" referrerpolicy="no-referrer">`
@@ -500,7 +577,23 @@
                                 ${game.release_date ? new Date(game.release_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' }) : 'TBA'}
                             </span>
                         </div>
-                        <div class="library-card-actions">
+                        ${showCompletion ? `
+                            <div class="completion-section">
+                                <div class="completion-header">
+                                    <span class="completion-label">Completion</span>
+                                    <span class="completion-value" id="completion-val-${game.rawg_id}">${completion}%</span>
+                                </div>
+                                <input type="range" min="0" max="100" value="${completion}"
+                                    class="completion-slider"
+                                    id="slider-${game.rawg_id}"
+                                    oninput="updateCompletionUI(${game.rawg_id}, this.value)"
+                                    onchange="saveCompletion(${game.rawg_id}, this.value)">
+                                <div class="completion-bar-track">
+                                    <div class="completion-bar-fill" id="completion-bar-${game.rawg_id}" style="width:${completion}%;"></div>
+                                </div>
+                            </div>
+                        ` : ''}
+                        <div class="library-card-actions" style="margin-top:0.8rem;">
                             ${Object.entries(statusLabels)
                                 .filter(([s]) => s !== game.status)
                                 .map(([s, label]) => `
@@ -514,7 +607,33 @@
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `}).join('');
+        }
+
+        function updateCompletionUI(rawg_id, value) {
+            const val = document.getElementById(`completion-val-${rawg_id}`);
+            const bar = document.getElementById(`completion-bar-${rawg_id}`);
+            if (val) val.textContent = `${value}%`;
+            if (bar) bar.style.width = `${value}%`;
+        }
+
+        async function saveCompletion(rawg_id, value) {
+            clearTimeout(completionTimeouts[rawg_id]);
+            completionTimeouts[rawg_id] = setTimeout(async () => {
+                const game = allUserGames.find(g => g.rawg_id === rawg_id);
+                if (!game) return;
+                try {
+                    await fetch('/api/user-games', {
+                        method: 'POST',
+                        headers: authHeaders(),
+                        body: JSON.stringify({ ...game, completion: parseInt(value) })
+                    });
+                    const idx = allUserGames.findIndex(g => g.rawg_id === rawg_id);
+                    if (idx !== -1) allUserGames[idx].completion = parseInt(value);
+                } catch (err) {
+                    console.error('Failed to save completion:', err);
+                }
+            }, 500);
         }
 
         async function changeStatus(rawg_id, status, game) {
@@ -560,16 +679,14 @@
             searchTimeout = setTimeout(() => searchGames(query), 400);
         });
 
-        // Close when clicking outside
         document.addEventListener('click', (e) => {
             if (!e.target.closest('.game-search-input-wrapper')) {
                 dropdown.style.display = 'none';
             }
         });
 
-        // Event delegation — intercept all clicks inside dropdown
         dropdown.addEventListener('click', (e) => {
-            e.stopPropagation(); // prevent document click from closing dropdown
+            e.stopPropagation();
             const btn = e.target.closest('.add-to-library-btn');
             if (!btn) return;
             const rawgId = parseInt(btn.dataset.rawgId);
@@ -642,9 +759,9 @@
                 await fetch('/api/user-games', {
                     method: 'POST',
                     headers: authHeaders(),
-                    body: JSON.stringify({ ...game, status })
+                    body: JSON.stringify({ ...game, status, completion: 0 })
                 });
-                allUserGames.push({ ...game, status, added_at: new Date().toISOString() });
+                allUserGames.push({ ...game, status, completion: 0, added_at: new Date().toISOString() });
                 renderStats();
                 renderGames(currentFilter);
                 const query = searchInput.value.trim();
