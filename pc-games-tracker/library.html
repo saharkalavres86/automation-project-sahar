@@ -437,6 +437,7 @@
         <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
             <a href="/" style="display:inline-block;background:linear-gradient(90deg,#ff3c78,#7828c8);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;box-shadow:0 0 15px rgba(255,60,120,0.5);">🎮 BACK TO GAMES</a>
             <a href="/wishlist" style="display:inline-block;background:linear-gradient(90deg,#7828c8,#00c8ff);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;box-shadow:0 0 15px rgba(120,40,200,0.5);">🔖 MY WISHLIST</a>
+            <button onclick="exportLibrary()" style="display:inline-block;background:linear-gradient(90deg,#00ff88,#7828c8);color:#000;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;border:none;cursor:pointer;letter-spacing:1px;box-shadow:0 0 15px rgba(0,255,136,0.5);transition:all 0.3s;">📥 EXPORT CSV</button>
         </div>
     </header>
 
@@ -663,6 +664,21 @@
                 renderGames(currentFilter);
             } catch (err) {
                 console.error('Failed to remove game:', err);
+            }
+        }
+
+        async function exportLibrary() {
+            try {
+                const res = await fetch('/api/export-library', { headers: authHeaders() });
+                const blob = await res.blob();
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'my-games-library.csv';
+                a.click();
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                console.error('Failed to export:', err);
             }
         }
 

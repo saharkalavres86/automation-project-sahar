@@ -788,3 +788,35 @@ app.delete('/api/notifications', authenticate, async (req, res) => {
 app.get('/user/:userId', (req, res) => {
     res.sendFile(join(__dirname, '../user-profile.html'));
 });
+
+// ─── EXPORT LIBRARY AS CSV ─────────────────────────────────
+app.get('/api/export-library', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM user_games WHERE user_id = $1 ORDER BY status, name',
+            [req.userId]
+        );
+
+        const rows = result.rows;
+        const headers = ['Name', 'Status', 'Completion %', 'Rating', 'Genres', 'Release Date', 'Added At'];
+
+        const csv = [
+            headers.join(','),
+            ...rows.map(g => [
+                `"${(g.name || '').replace(/"/g, '""')}"`,
+                g.status || '',
+                g.completion || 0,
+                g.rating || '',
+                `"${(g.genres || '').replace(/"/g, '""')}"`,
+                g.release_date ? new Date(g.release_date).toLocaleDateString('en-US') : '',
+                g.added_at ? new Date(g.added_at).toLocaleDateString('en-US') : ''
+            ].join(','))
+        ].join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="my-games-library.csv"');
+        res.send(csv);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
