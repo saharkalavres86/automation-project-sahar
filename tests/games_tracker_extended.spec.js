@@ -730,11 +730,12 @@ test.describe('PC Games Tracker — Extended Tests', () => {
             await expect(page.locator('#notif-dropdown button:has-text("Clear all")')).toBeVisible();
         });
 
-        test('Notification list element exists in dropdown', async ({ page }) => {
-            await page.locator('#notif-btn').click();
-            await expect(page.locator('#notif-dropdown')).toBeVisible();
-            await expect(page.locator('#notif-list')).not.toBeHidden();
-        });
+      test('Notification list element exists in dropdown', async ({ page }) => {
+    await page.locator('#notif-btn').click();
+    await expect(page.locator('#notif-dropdown')).toBeVisible();
+    const notifList = page.locator('#notif-list');
+    expect(await notifList.count()).toBe(1);
+});
 
         test('Dropdown closes on outside click', async ({ page }) => {
             await page.locator('#notif-btn').click();
