@@ -2,7 +2,7 @@
 
 ![CI/CD](https://github.com/saharkalavres86/automation-project-sahar/actions/workflows/playwright.yml/badge.svg)
 
-A production-grade full stack game tracking platform with user authentication, personalized libraries, hidden gem discovery, and a complete test automation framework — built from scratch by a Senior QA Engineer transitioning into automation.
+A production-grade full stack game tracking platform with user authentication, personalized libraries, social features, hidden gem discovery, and a complete test automation framework — built from scratch by a Senior QA Engineer transitioning into automation.
 
 🔗 **Live App:** [automation-project-sahar-production.up.railway.app](https://automation-project-sahar-production.up.railway.app)
 
@@ -10,7 +10,7 @@ A production-grade full stack game tracking platform with user authentication, p
 
 ## 🚀 What This Project Does
 
-A game tracking and discovery platform where users can browse upcoming PC game releases, manage personal game libraries, rate games, track backlog, and discover hidden gems — all backed by a real-time RAWG API integration and a PostgreSQL database.
+A game tracking and discovery platform where users can browse upcoming PC game releases, manage personal game libraries, rate and review games, track completion progress, follow friends, and discover hidden gems — all backed by a real-time RAWG API integration and a PostgreSQL database.
 
 ---
 
@@ -23,7 +23,9 @@ automation-project/
 │   ├── wishlist.html           ← Wishlist page
 │   ├── library.html            ← Personal game library
 │   ├── profile.html            ← User profile & stats
+│   ├── user-profile.html       ← Public user profile
 │   ├── discover.html           ← Hidden gems discovery
+│   ├── social.html             ← Friends & social feed
 │   ├── auth.html               ← Login & Register
 │   ├── auth-callback.html      ← Google OAuth callback
 │   ├── app.js                  ← Frontend logic
@@ -38,7 +40,8 @@ automation-project/
 │       └── tests/
 │           └── api.test.js     ← Jest API tests (22 tests)
 ├── tests/
-│   └── games_tracker.spec.js   ← Playwright UI tests (19 tests)
+│   ├── games_tracker.spec.js          ← Playwright UI tests (19 tests)
+│   └── games_tracker_extended.spec.js ← Extended Playwright tests (169 tests)
 └── .github/
     └── workflows/
         └── playwright.yml      ← GitHub Actions CI/CD
@@ -80,30 +83,49 @@ automation-project/
 - **Email + password registration** with full validation
 - **Google OAuth** — one-click sign in with Google
 - **JWT authentication** — secure session management
-- **User profile page** — avatar, stats, gaming identity
+- **User profile page** — avatar, stats, gaming identity, share button
+- **Public profile** — shareable URL at `/user/:id` visible to anyone
 
 ### 📚 Personal Library
+- **Search any game from RAWG** — add any game from the entire RAWG database (500,000+ games)
 - **Game status tracking** — Playing, Completed, Backlog, Dropped
+- **Completion % slider** — track how far you are in Playing/Completed games
 - **Status badges** on game cards and in modals
 - **My Library page** — organized view with tab filters per status
 - **Collection breakdown** — visual progress bars per status
+- **Export as CSV** — download your full library with status, completion %, genres
 
 ### 🔖 Wishlist
 - **Per-user wishlist** — saved games tied to your account
 - **📧 Release alerts** — email notification when wishlisted games are about to release
 - **Subscribe/unsubscribe** — manage alert preferences
 
-### ⭐ Ratings
+### ⭐ Ratings & Reviews
 - **Personal 1–10 star rating** system
 - **Rating badge** shown on game cards
 - **Ratings feed into** personalized discovery
+- **Written reviews** — write, save, and delete reviews per game in the modal
 
 ### 💎 Hidden Gems Discovery
 - **Personalized recommendations** — based on your highest-rated genres
 - **Hidden gems feed** — high-rated, low-popularity games from RAWG
 - **Genre filters** — Action, RPG, Adventure, Strategy, Indie, Puzzle
 - **"Because you like X"** tags on personalized cards
-- **Direct RAWG links** — click any gem to view full details
+
+### 👥 Social Features
+- **Follow/unfollow users** — build your gaming network
+- **Friends activity feed** — see what friends are playing in real time
+- **User search** — find other users by display name
+- **Public profiles** — view anyone's game collection and stats
+- **Share profile** — copy your profile link to clipboard
+
+### 🔔 Notification Center
+- **Bell icon in header** — shows unread count badge
+- **Release notifications** — triggered when wishlisted games are about to release
+- **Friend activity notifications** — when people you follow add games
+- **Mark as read** — individually or all at once
+- **Clear all** — remove all notifications
+- **Auto-refresh** — polls every 60 seconds
 
 ### 🎨 UI & UX
 - **Arcade UI theme** — animated cards, glowing effects, custom fonts
@@ -115,14 +137,35 @@ automation-project/
 
 ### ⚙️ Automation & Infrastructure
 - **Daily auto-refresh** — DB updates every day at 08:00 (Israel time)
-- **Midnight health check** — auto-triggers refresh if DB has less than 10 games
 - **Scheduled email alerts** — daily cron checks wishlist release dates
+- **Notification generation** — cron creates in-app notifications for upcoming releases and friend activity
 
 ---
 
 ## 🧪 Test Suite
 
-### Playwright UI Tests (19 tests)
+### Extended Playwright UI Tests (169 tests)
+```
+✅ Wishlist Page (7 tests)
+✅ Auth Page (14 tests)
+✅ Library Page (13 tests)
+✅ Completion % Slider (6 tests)
+✅ Export Library CSV (4 tests)
+✅ Game Reviews (6 tests)
+✅ Profile Page (6 tests)
+✅ Public User Profile (11 tests)
+✅ Social Page (15 tests)
+✅ Notification Center (12 tests)
+✅ Discover Page (13 tests)
+✅ Header Navigation (13 tests)
+✅ Game Modal New Features (8 tests)
+✅ Load More Pagination (6 tests)
+✅ Game Description (4 tests)
+✅ Lightbox Navigation (4 tests)
+✅ Recently Viewed (5 tests)
+```
+
+### Original Playwright UI Tests (19 tests)
 ```
 ✅ Homepage loads with game cards
 ✅ Page title is correct
@@ -201,6 +244,16 @@ CREATE TABLE games (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255),
+    google_id VARCHAR(255),
+    display_name VARCHAR(255),
+    avatar_url TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
 CREATE TABLE wishlist (
     id SERIAL PRIMARY KEY,
     rawg_id INTEGER,
@@ -213,16 +266,6 @@ CREATE TABLE wishlist (
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     added_at TIMESTAMP DEFAULT NOW(),
     UNIQUE (rawg_id, user_id)
-);
-
-CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password VARCHAR(255),
-    google_id VARCHAR(255),
-    display_name VARCHAR(255),
-    avatar_url TEXT,
-    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE subscribers (
@@ -241,6 +284,7 @@ CREATE TABLE user_games (
     rating DECIMAL,
     genres TEXT,
     status VARCHAR(50) CHECK (status IN ('playing', 'completed', 'backlog', 'dropped')),
+    completion INTEGER DEFAULT 0 CHECK (completion >= 0 AND completion <= 100),
     added_at TIMESTAMP DEFAULT NOW(),
     UNIQUE (user_id, rawg_id)
 );
@@ -252,6 +296,37 @@ CREATE TABLE user_ratings (
     rating INTEGER CHECK (rating >= 1 AND rating <= 10),
     created_at TIMESTAMP DEFAULT NOW(),
     UNIQUE (user_id, rawg_id)
+);
+
+CREATE TABLE user_reviews (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    rawg_id INTEGER NOT NULL,
+    game_name VARCHAR(255),
+    review_text TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (user_id, rawg_id)
+);
+
+CREATE TABLE friendships (
+    id SERIAL PRIMARY KEY,
+    follower_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    following_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (follower_id, following_id)
+);
+
+CREATE TABLE notifications (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+    rawg_id INTEGER,
+    game_name VARCHAR(255),
+    background_image TEXT,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 ```
 
@@ -265,6 +340,7 @@ CREATE TABLE user_ratings (
 | GET | `/api/games` | Get all games (sort, genre, search, page params) |
 | GET | `/api/game/:id` | Get game description from RAWG |
 | GET | `/api/game/:id/trailer` | Get game trailer from RAWG |
+| GET | `/api/search-rawg` | Search entire RAWG database |
 | POST | `/api/refresh` | Manually refresh games from RAWG |
 | GET | `/api/stats` | DB stats (total games, last updated) |
 | GET | `/api/health` | Health check |
@@ -289,21 +365,45 @@ CREATE TABLE user_ratings (
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/api/user-games` | Get user's game library |
-| POST | `/api/user-games` | Add/update game status |
+| POST | `/api/user-games` | Add/update game status + completion % |
 | DELETE | `/api/user-games/:rawg_id` | Remove game from library |
+| GET | `/api/export-library` | Export library as CSV |
 
-### Ratings
+### Ratings & Reviews
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/api/ratings` | Get user's ratings |
 | POST | `/api/ratings` | Add/update a rating |
 | DELETE | `/api/ratings/:rawg_id` | Remove a rating |
+| GET | `/api/reviews` | Get user's reviews |
+| GET | `/api/reviews/:rawg_id` | Get all reviews for a game (public) |
+| POST | `/api/reviews` | Add/update a review |
+| DELETE | `/api/reviews/:rawg_id` | Delete a review |
 
 ### Discovery
 | Method | Endpoint | Description |
 |---|---|---|
 | GET | `/api/discover` | Get personalized + hidden gems |
 | GET | `/api/discover/genre` | Get hidden gems by genre |
+
+### Social
+| Method | Endpoint | Description |
+|---|---|---|
+| POST | `/api/follow/:userId` | Follow a user |
+| DELETE | `/api/follow/:userId` | Unfollow a user |
+| GET | `/api/following` | Get users I'm following |
+| GET | `/api/followers` | Get my followers |
+| GET | `/api/feed` | Get friends activity feed |
+| GET | `/api/users/search` | Search users by display name |
+| GET | `/api/users/:userId` | Get public user profile |
+
+### Notifications
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/notifications` | Get user's notifications |
+| POST | `/api/notifications/read` | Mark all notifications as read |
+| POST | `/api/notifications/read/:id` | Mark one notification as read |
+| DELETE | `/api/notifications` | Clear all notifications |
 
 ### Email
 | Method | Endpoint | Description |
@@ -377,7 +477,8 @@ npm test
 |---|---|
 | API Testing | `backend/tests/api.test.js` — 22 Jest tests |
 | UI Automation | `tests/games_tracker.spec.js` — 19 Playwright tests |
-| Scheduled Tasks | `node-cron` — daily refresh + health check + email alerts |
+| Extended UI Automation | `tests/games_tracker_extended.spec.js` — 169 Playwright tests |
+| Scheduled Tasks | `node-cron` — daily refresh + email alerts + notifications |
 | CI/CD | `.github/workflows/playwright.yml` — GitHub Actions |
 | JWT Auth | Stateless authentication with 7-day tokens |
 | OAuth 2.0 | Google login via Passport.js strategy |
