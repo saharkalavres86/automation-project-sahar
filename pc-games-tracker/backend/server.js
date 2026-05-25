@@ -97,13 +97,11 @@ app.post('/api/subscribe', async (req, res) => {
     try {
         const { email } = req.body;
         if (!email) return res.status(400).json({ error: 'Email required' });
-
         await pool.query(`
             INSERT INTO subscribers (email)
             VALUES ($1)
             ON CONFLICT (email) DO NOTHING
         `, [email]);
-
         res.json({ message: '✅ Subscribed successfully!' });
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -158,44 +156,6 @@ app.post('/api/refresh', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
-// Generate release notifications for wishlisted games
-const wishlistItems = await pool.query(`
-    SELECT w.*, w.user_id
-    FROM wishlist w
-    WHERE w.release_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
-`);
-
-for (const item of wishlistItems.rows) {
-    const daysLeft = Math.ceil((new Date(item.release_date) - new Date()) / (1000 * 60 * 60 * 24));
-    const message = daysLeft === 0
-        ? `🔥 ${item.name} is releasing TODAY!`
-        : `⏳ ${item.name} releases in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}!`;
-
-    await pool.query(`
-        INSERT INTO notifications (user_id, type, message, rawg_id, game_name, background_image)
-        VALUES ($1, 'release', $2, $3, $4, $5)
-        ON CONFLICT DO NOTHING
-    `, [item.user_id, message, item.rawg_id, item.name, item.background_image]);
-}
-
-// Generate friend activity notifications
-const recentActivity = await pool.query(`
-    SELECT ug.*, u.display_name,
-        f.follower_id as notify_user_id
-    FROM user_games ug
-    JOIN users u ON ug.user_id = u.id
-    JOIN friendships f ON f.following_id = ug.user_id
-    WHERE ug.added_at >= NOW() - INTERVAL '1 day'
-`);
-
-for (const activity of recentActivity.rows) {
-    const message = `👥 ${activity.display_name} marked ${activity.name} as ${activity.status}`;
-    await pool.query(`
-        INSERT INTO notifications (user_id, type, message, rawg_id, game_name, background_image)
-        VALUES ($1, 'friend_activity', $2, $3, $4, $5)
-    `, [activity.notify_user_id, message, activity.rawg_id, activity.name, activity.background_image]);
-}
 
 // ─── STATS ROUTE ─────────────────────────────────────────
 app.get('/api/stats', async (req, res) => {
@@ -262,7 +222,7 @@ app.delete('/api/wishlist/:rawg_id', authenticate, async (req, res) => {
     }
 });
 
-// ─── USER GAMES (BACKLOG) ─────────────────────────────────
+// ─── USER GAMES ──────────────────────────────────────────
 app.get('/api/user-games', authenticate, async (req, res) => {
     try {
         const { status } = req.query;
@@ -343,6 +303,63 @@ app.delete('/api/ratings/:rawg_id', authenticate, async (req, res) => {
             [req.params.rawg_id, req.userId]
         );
         res.json({ message: '✅ Rating removed' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ─── USER REVIEWS ─────────────────────────────────────────
+app.get('/api/reviews', authenticate, async (req, res) => {
+    try {
+        const result = await pool.query(
+            'SELECT * FROM user_reviews WHERE user_id = $1 ORDER BY updated_at DESC',
+            [req.userId]
+        );
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.get('/api/reviews/:rawg_id', async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT ur.*, u.display_name, u.avatar_url
+            FROM user_reviews ur
+            JOIN users u ON ur.user_id = u.id
+            WHERE ur.rawg_id = $1
+            ORDER BY ur.created_at DESC
+        `, [req.params.rawg_id]);
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.post('/api/reviews', authenticate, async (req, res) => {
+    try {
+        const { rawg_id, game_name, review_text } = req.body;
+        if (!rawg_id || !review_text?.trim()) {
+            return res.status(400).json({ error: 'rawg_id and review_text are required' });
+        }
+        await pool.query(`
+            INSERT INTO user_reviews (user_id, rawg_id, game_name, review_text)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (user_id, rawg_id) DO UPDATE SET review_text = $4, updated_at = NOW()
+        `, [req.userId, rawg_id, game_name, review_text.trim()]);
+        res.json({ message: '✅ Review saved' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+app.delete('/api/reviews/:rawg_id', authenticate, async (req, res) => {
+    try {
+        await pool.query(
+            'DELETE FROM user_reviews WHERE rawg_id = $1 AND user_id = $2',
+            [req.params.rawg_id, req.userId]
+        );
+        res.json({ message: '✅ Review deleted' });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -451,153 +468,7 @@ app.get('/api/discover/genre', async (req, res) => {
     }
 });
 
-// ─── USER REVIEWS ─────────────────────────────────────────
-app.get('/api/reviews', authenticate, async (req, res) => {
-    try {
-        const result = await pool.query(
-            'SELECT * FROM user_reviews WHERE user_id = $1 ORDER BY updated_at DESC',
-            [req.userId]
-        );
-        res.json(result.rows);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.get('/api/reviews/:rawg_id', async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT ur.*, u.display_name, u.avatar_url
-            FROM user_reviews ur
-            JOIN users u ON ur.user_id = u.id
-            WHERE ur.rawg_id = $1
-            ORDER BY ur.created_at DESC
-        `, [req.params.rawg_id]);
-        res.json(result.rows);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.post('/api/reviews', authenticate, async (req, res) => {
-    try {
-        const { rawg_id, game_name, review_text } = req.body;
-        if (!rawg_id || !review_text?.trim()) {
-            return res.status(400).json({ error: 'rawg_id and review_text are required' });
-        }
-        await pool.query(`
-            INSERT INTO user_reviews (user_id, rawg_id, game_name, review_text)
-            VALUES ($1, $2, $3, $4)
-            ON CONFLICT (user_id, rawg_id) DO UPDATE SET review_text = $4, updated_at = NOW()
-        `, [req.userId, rawg_id, game_name, review_text.trim()]);
-        res.json({ message: '✅ Review saved' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-app.delete('/api/reviews/:rawg_id', authenticate, async (req, res) => {
-    try {
-        await pool.query(
-            'DELETE FROM user_reviews WHERE rawg_id = $1 AND user_id = $2',
-            [req.params.rawg_id, req.userId]
-        );
-        res.json({ message: '✅ Review deleted' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
-
-
-// ─── SERVE FRONTEND PAGES ────────────────────────────────
-app.get('/wishlist', (req, res) => {
-    res.sendFile(join(__dirname, '../wishlist.html'));
-});
-
-app.get('/auth', (req, res) => {
-    res.sendFile(join(__dirname, '../auth.html'));
-});
-
-app.get('/auth/callback', (req, res) => {
-    res.sendFile(join(__dirname, '../auth-callback.html'));
-});
-
-app.get('/library', (req, res) => {
-    res.sendFile(join(__dirname, '../library.html'));
-});
-
-app.get('/profile', (req, res) => {
-    res.sendFile(join(__dirname, '../profile.html'));
-});
-
-app.get('/discover', (req, res) => {
-    res.sendFile(join(__dirname, '../discover.html'));
-});
-
-app.get('/', (req, res) => {
-    res.sendFile(join(__dirname, '../index.html'));
-});
-
-// ─── SCHEDULERS ───────────────────────────────────────────
-cron.schedule('0 8 * * *', async () => {
-    console.log('⏰ Running daily DB refresh and release alerts at 08:00...');
-    try {
-        const count = await fetchAndSaveGames();
-        console.log(`✅ Daily refresh complete — ${count} games updated`);
-
-        const subscribers = await pool.query('SELECT email FROM subscribers');
-        for (const subscriber of subscribers.rows) {
-            try {
-                const upcomingGames = await pool.query(`
-                    SELECT w.* FROM wishlist w
-                    WHERE w.release_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days'
-                `);
-                if (upcomingGames.rows.length > 0) {
-                    await sendReleaseAlert(subscriber.email, upcomingGames.rows);
-                }
-            } catch (emailError) {
-                console.error(`❌ Failed to send alert to ${subscriber.email}:`, emailError.message);
-            }
-        }
-    } catch (error) {
-        console.error('❌ Daily refresh failed:', error.message);
-    }
-}, { timezone: 'Asia/Jerusalem' });
-
-// ─── TEST EMAIL ALERT ─────────────────────────────────────
-app.post('/api/test-alert', async (req, res) => {
-    try {
-        const { email } = req.body;
-        const games = await pool.query(`SELECT * FROM wishlist LIMIT 3`);
-
-        if (games.rows.length === 0) {
-            return res.json({ message: 'No games in wishlist to test with' });
-        }
-
-        await sendReleaseAlert(email, games.rows);
-        res.json({ message: `✅ Test alert sent to ${email}` });
-    } catch (error) {
-        console.error('❌ test-alert error:', error);
-        res.status(500).json({ error: error.message, stack: error.stack });
-    }
-});
-
-// ─── START SERVER ─────────────────────────────────────────
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, async () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log('⏰ Daily refresh scheduled at 08:00');
-    console.log('🏥 Health check scheduled at midnight');
-    try {
-        await fetchAndSaveGames();
-    } catch (error) {
-        console.error('❌ Initial fetch failed:', error.message);
-    }
-});
-
 // ─── SOCIAL / FRIENDS ─────────────────────────────────────
-
-// Follow a user
 app.post('/api/follow/:userId', authenticate, async (req, res) => {
     try {
         const followingId = parseInt(req.params.userId);
@@ -615,7 +486,6 @@ app.post('/api/follow/:userId', authenticate, async (req, res) => {
     }
 });
 
-// Unfollow a user
 app.delete('/api/follow/:userId', authenticate, async (req, res) => {
     try {
         await pool.query(
@@ -628,7 +498,6 @@ app.delete('/api/follow/:userId', authenticate, async (req, res) => {
     }
 });
 
-// Get who I'm following
 app.get('/api/following', authenticate, async (req, res) => {
     try {
         const result = await pool.query(`
@@ -644,7 +513,6 @@ app.get('/api/following', authenticate, async (req, res) => {
     }
 });
 
-// Get my followers
 app.get('/api/followers', authenticate, async (req, res) => {
     try {
         const result = await pool.query(`
@@ -660,7 +528,6 @@ app.get('/api/followers', authenticate, async (req, res) => {
     }
 });
 
-// Get social feed (recent activity from people I follow)
 app.get('/api/feed', authenticate, async (req, res) => {
     try {
         const result = await pool.query(`
@@ -682,12 +549,10 @@ app.get('/api/feed', authenticate, async (req, res) => {
     }
 });
 
-// Search users to follow
 app.get('/api/users/search', authenticate, async (req, res) => {
     try {
         const { query } = req.query;
         if (!query || query.length < 2) return res.json([]);
-
         const result = await pool.query(`
             SELECT u.id, u.display_name, u.avatar_url,
                 EXISTS(
@@ -705,7 +570,6 @@ app.get('/api/users/search', authenticate, async (req, res) => {
     }
 });
 
-// Get public user profile
 app.get('/api/users/:userId', async (req, res) => {
     try {
         const userResult = await pool.query(
@@ -715,15 +579,12 @@ app.get('/api/users/:userId', async (req, res) => {
         if (userResult.rows.length === 0) {
             return res.status(404).json({ error: 'User not found' });
         }
-
         const user = userResult.rows[0];
-
         const [gamesResult, followersResult, followingResult] = await Promise.all([
             pool.query('SELECT * FROM user_games WHERE user_id = $1 ORDER BY added_at DESC', [user.id]),
             pool.query('SELECT COUNT(*) FROM friendships WHERE following_id = $1', [user.id]),
             pool.query('SELECT COUNT(*) FROM friendships WHERE follower_id = $1', [user.id])
         ]);
-
         res.json({
             user,
             games: gamesResult.rows,
@@ -733,10 +594,6 @@ app.get('/api/users/:userId', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
-});
-
-app.get('/social', (req, res) => {
-    res.sendFile(join(__dirname, '../social.html'));
 });
 
 // ─── NOTIFICATIONS ─────────────────────────────────────────
@@ -785,10 +642,6 @@ app.delete('/api/notifications', authenticate, async (req, res) => {
     }
 });
 
-app.get('/user/:userId', (req, res) => {
-    res.sendFile(join(__dirname, '../user-profile.html'));
-});
-
 // ─── EXPORT LIBRARY AS CSV ─────────────────────────────────
 app.get('/api/export-library', authenticate, async (req, res) => {
     try {
@@ -796,10 +649,8 @@ app.get('/api/export-library', authenticate, async (req, res) => {
             'SELECT * FROM user_games WHERE user_id = $1 ORDER BY status, name',
             [req.userId]
         );
-
         const rows = result.rows;
         const headers = ['Name', 'Status', 'Completion %', 'Rating', 'Genres', 'Release Date', 'Added At'];
-
         const csv = [
             headers.join(','),
             ...rows.map(g => [
@@ -812,11 +663,170 @@ app.get('/api/export-library', authenticate, async (req, res) => {
                 g.added_at ? new Date(g.added_at).toLocaleDateString('en-US') : ''
             ].join(','))
         ].join('\n');
-
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', 'attachment; filename="my-games-library.csv"');
         res.send(csv);
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// ─── AI TEST GENERATOR ─────────────────────────────────────
+app.post('/api/generate-tests', async (req, res) => {
+    try {
+        const { feature, url, context } = req.body;
+        if (!feature) return res.status(400).json({ error: 'Feature description is required' });
+
+        const appUrl = url || 'https://automation-project-sahar-production.up.railway.app';
+
+        const prompt = `You are an expert QA automation engineer specializing in Playwright. Generate comprehensive Playwright test cases in JavaScript for the following feature of the Games Tracker web application.
+
+App URL: ${appUrl}
+Feature to test: ${feature}
+${context ? `Additional context: ${context}` : ''}
+
+App context: Games Tracker is a game tracking platform where users can browse upcoming games, manage a personal library (Playing/Completed/Backlog/Dropped), rate games 1-10, write reviews, add games to wishlist, follow friends, see a social feed, discover hidden gems, and receive notifications.
+
+Requirements for the generated tests:
+1. Use: import { test, expect } from '@playwright/test';
+2. Use: const BASE_URL = '${appUrl}';
+3. Wrap all tests in a descriptive test.describe block
+4. Cover: happy path, edge cases, unauthenticated state, error states
+5. Use good selectors: prefer id, role, text over CSS classes
+6. Add waitForTimeout only when truly necessary (API calls, animations)
+7. Each test should be independent and descriptive
+8. Include at least 6-10 tests
+9. Add comments explaining what each test group covers
+
+Return ONLY the JavaScript code. No markdown, no backticks, no explanation.`;
+
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': process.env.ANTHROPIC_API_KEY,
+                'anthropic-version': '2023-06-01'
+            },
+            body: JSON.stringify({
+                model: 'claude-sonnet-4-6',
+                max_tokens: 4000,
+                messages: [{ role: 'user', content: prompt }]
+            })
+        });
+
+        const data = await response.json();
+        if (data.error) {
+            return res.status(500).json({ error: data.error.message });
+        }
+
+        const tests = data.content[0].text;
+        res.json({ tests });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ─── SERVE FRONTEND PAGES ────────────────────────────────
+app.get('/wishlist', (req, res) => res.sendFile(join(__dirname, '../wishlist.html')));
+app.get('/auth', (req, res) => res.sendFile(join(__dirname, '../auth.html')));
+app.get('/auth/callback', (req, res) => res.sendFile(join(__dirname, '../auth-callback.html')));
+app.get('/library', (req, res) => res.sendFile(join(__dirname, '../library.html')));
+app.get('/profile', (req, res) => res.sendFile(join(__dirname, '../profile.html')));
+app.get('/discover', (req, res) => res.sendFile(join(__dirname, '../discover.html')));
+app.get('/social', (req, res) => res.sendFile(join(__dirname, '../social.html')));
+app.get('/user/:userId', (req, res) => res.sendFile(join(__dirname, '../user-profile.html')));
+app.get('/ai-tester', (req, res) => res.sendFile(join(__dirname, '../ai-tester.html')));
+app.get('/', (req, res) => res.sendFile(join(__dirname, '../index.html')));
+
+// ─── TEST EMAIL ALERT ─────────────────────────────────────
+app.post('/api/test-alert', async (req, res) => {
+    try {
+        const { email } = req.body;
+        const games = await pool.query(`SELECT * FROM wishlist LIMIT 3`);
+        if (games.rows.length === 0) {
+            return res.json({ message: 'No games in wishlist to test with' });
+        }
+        await sendReleaseAlert(email, games.rows);
+        res.json({ message: `✅ Test alert sent to ${email}` });
+    } catch (error) {
+        console.error('❌ test-alert error:', error);
+        res.status(500).json({ error: error.message, stack: error.stack });
+    }
+});
+
+// ─── SCHEDULERS ───────────────────────────────────────────
+cron.schedule('0 8 * * *', async () => {
+    console.log('⏰ Running daily DB refresh and release alerts at 08:00...');
+    try {
+        const count = await fetchAndSaveGames();
+        console.log(`✅ Daily refresh complete — ${count} games updated`);
+
+        // Send email alerts
+        const subscribers = await pool.query('SELECT email FROM subscribers');
+        for (const subscriber of subscribers.rows) {
+            try {
+                const upcomingGames = await pool.query(`
+                    SELECT w.* FROM wishlist w
+                    WHERE w.release_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '3 days'
+                `);
+                if (upcomingGames.rows.length > 0) {
+                    await sendReleaseAlert(subscriber.email, upcomingGames.rows);
+                }
+            } catch (emailError) {
+                console.error(`❌ Failed to send alert to ${subscriber.email}:`, emailError.message);
+            }
+        }
+
+        // Generate release notifications
+        const wishlistItems = await pool.query(`
+            SELECT w.*, w.user_id FROM wishlist w
+            WHERE w.release_date BETWEEN CURRENT_DATE AND CURRENT_DATE + INTERVAL '7 days'
+        `);
+        for (const item of wishlistItems.rows) {
+            const daysLeft = Math.ceil((new Date(item.release_date) - new Date()) / (1000 * 60 * 60 * 24));
+            const message = daysLeft === 0
+                ? `🔥 ${item.name} is releasing TODAY!`
+                : `⏳ ${item.name} releases in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}!`;
+            try {
+                await pool.query(`
+                    INSERT INTO notifications (user_id, type, message, rawg_id, game_name, background_image)
+                    VALUES ($1, 'release', $2, $3, $4, $5)
+                    ON CONFLICT DO NOTHING
+                `, [item.user_id, message, item.rawg_id, item.name, item.background_image]);
+            } catch {}
+        }
+
+        // Generate friend activity notifications
+        const recentActivity = await pool.query(`
+            SELECT ug.*, u.display_name, f.follower_id as notify_user_id
+            FROM user_games ug
+            JOIN users u ON ug.user_id = u.id
+            JOIN friendships f ON f.following_id = ug.user_id
+            WHERE ug.added_at >= NOW() - INTERVAL '1 day'
+        `);
+        for (const activity of recentActivity.rows) {
+            const message = `👥 ${activity.display_name} marked ${activity.name} as ${activity.status}`;
+            try {
+                await pool.query(`
+                    INSERT INTO notifications (user_id, type, message, rawg_id, game_name, background_image)
+                    VALUES ($1, 'friend_activity', $2, $3, $4, $5)
+                `, [activity.notify_user_id, message, activity.rawg_id, activity.name, activity.background_image]);
+            } catch {}
+        }
+
+    } catch (error) {
+        console.error('❌ Daily refresh failed:', error.message);
+    }
+}, { timezone: 'Asia/Jerusalem' });
+
+// ─── START SERVER ─────────────────────────────────────────
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, async () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log('⏰ Daily refresh scheduled at 08:00');
+    try {
+        await fetchAndSaveGames();
+    } catch (error) {
+        console.error('❌ Initial fetch failed:', error.message);
     }
 });
