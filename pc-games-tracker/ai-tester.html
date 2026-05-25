@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Test Generator — Games Tracker</title>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤖</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        .ai-container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .panel {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            border-radius: 16px;
+            border: 1px solid rgba(120, 40, 200, 0.3);
+            padding: 1.5rem;
+        }
+
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: #00c8ff;
+            letter-spacing: 2px;
+            margin-bottom: 1.2rem;
+            padding-bottom: 0.6rem;
+            border-bottom: 1px solid rgba(0, 200, 255, 0.2);
+        }
+
+        .form-group { margin-bottom: 1.2rem; }
+
+        .form-label {
+            display: block;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #888;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            border: 2px solid rgba(120, 40, 200, 0.3);
+            background: rgba(120, 40, 200, 0.06);
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.95rem;
+            font-weight: 600;
+            outline: none;
+            transition: all 0.3s;
+            box-sizing: border-box;
+        }
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            border-color: #00c8ff;
+            background: rgba(0, 200, 255, 0.06);
+            box-shadow: 0 0 15px rgba(0, 200, 255, 0.15);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        .form-input::placeholder, .form-textarea::placeholder { color: #444; }
+
+        .form-select option { background: #1a1a2e; }
+
+        .quick-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .quick-btn {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            border: 1px solid rgba(120, 40, 200, 0.4);
+            background: transparent;
+            color: #888;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-btn:hover {
+            border-color: #7828c8;
+            color: #fff;
+            background: rgba(120, 40, 200, 0.15);
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(90deg, #7828c8, #00c8ff);
+            color: #fff;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(120, 40, 200, 0.4);
+        }
+
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px rgba(0, 200, 255, 0.5);
+        }
+
+        .generate-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .output-panel { grid-column: 2; }
+
+        .code-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .code-actions { display: flex; gap: 0.5rem; }
+
+        .code-action-btn {
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            border: 1px solid rgba(120, 40, 200, 0.4);
+            background: transparent;
+            color: #888;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .code-action-btn:hover { border-color: #00c8ff; color: #00c8ff; }
+
+        .code-output {
+            background: #0d0d1a;
+            border-radius: 10px;
+            border: 1px solid rgba(120, 40, 200, 0.2);
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.78rem;
+            color: #ccc;
+            line-height: 1.7;
+            min-height: 400px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .code-output.loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #555;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+        }
+
+        .code-output.empty {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1rem;
+            gap: 0.5rem;
+        }
+
+        /* Syntax highlighting */
+        .kw { color: #c792ea; }
+        .fn { color: #82aaff; }
+        .str { color: #c3e88d; }
+        .cmt { color: #546e7a; font-style: italic; }
+        .num { color: #f78c6c; }
+
+        .stats-row {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .stat-pill {
+            background: rgba(120, 40, 200, 0.1);
+            border: 1px solid rgba(120, 40, 200, 0.3);
+            border-radius: 20px;
+            padding: 0.3rem 0.8rem;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.8rem;
+            color: #ccc;
+        }
+
+        .stat-pill span { color: #00c8ff; font-weight: 700; }
+
+        .history-section { margin-top: 1.5rem; }
+
+        .history-item {
+            padding: 0.6rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid rgba(120, 40, 200, 0.2);
+            margin-bottom: 0.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:hover { border-color: #7828c8; background: rgba(120, 40, 200, 0.08); }
+
+        .history-item-text {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85rem;
+            color: #ccc;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .history-item-time {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.72rem;
+            color: #555;
+            flex-shrink: 0;
+            margin-left: 0.5rem;
+        }
+
+        .copy-success {
+            color: #00ff88;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.8rem;
+            display: none;
+        }
+
+        .loading-dots::after {
+            content: '';
+            animation: dots 1.5s infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: ''; }
+            40% { content: '.'; }
+            60% { content: '..'; }
+            80%, 100% { content: '...'; }
+        }
+
+        @media (max-width: 900px) {
+            .ai-container { grid-template-columns: 1fr; }
+            .output-panel { grid-column: 1; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🤖 AI Test Generator</h1>
+        <p>Describe a feature and get Playwright tests instantly</p>
+        <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;margin-top:1rem;">
+            <a href="/" style="display:inline-block;background:linear-gradient(90deg,#ff3c78,#7828c8);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;box-shadow:0 0 15px rgba(255,60,120,0.5);">🎮 BACK TO GAMES</a>
+            <a href="/library" style="display:inline-block;background:linear-gradient(90deg,#00c8ff,#7828c8);color:white;padding:0.5rem 1.5rem;border-radius:20px;font-family:'Orbitron',sans-serif;font-size:0.75rem;text-decoration:none;letter-spacing:1px;">📚 MY LIBRARY</a>
+        </div>
+    </header>
+
+    <div class="ai-container">
+
+        <!-- INPUT PANEL -->
+        <div class="panel">
+            <p class="panel-title">⚙️ TEST CONFIGURATION</p>
+
+            <div class="form-group">
+                <label class="form-label">App URL</label>
+                <input type="text" class="form-input" id="app-url"
+                    value="https://automation-project-sahar-production.up.railway.app"
+                    placeholder="https://your-app.com">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Feature / Page to Test</label>
+                <p style="font-family:'Rajdhani',sans-serif;font-size:0.78rem;color:#555;margin-bottom:0.5rem;">Quick picks:</p>
+                <div class="quick-btns" id="quick-btns">
+                    <button class="quick-btn" onclick="setFeature('Login and registration page with email/password and Google OAuth')">🔐 Auth</button>
+                    <button class="quick-btn" onclick="setFeature('Game library page where users can track games with statuses: Playing, Completed, Backlog, Dropped')">📚 Library</button>
+                    <button class="quick-btn" onclick="setFeature('Wishlist page where users can save upcoming games and subscribe to release alerts')">🔖 Wishlist</button>
+                    <button class="quick-btn" onclick="setFeature('Social page where users can follow friends and see their gaming activity feed')">👥 Social</button>
+                    <button class="quick-btn" onclick="setFeature('Notification center with bell icon, unread badge, mark as read and clear all')">🔔 Notifications</button>
+                    <button class="quick-btn" onclick="setFeature('Hidden gems discovery page with genre filters and personalized recommendations')">💎 Discover</button>
+                    <button class="quick-btn" onclick="setFeature('Game modal with status tracking, 1-10 star rating, written review, description and trailer')">🎮 Game Modal</button>
+                    <button class="quick-btn" onclick="setFeature('Public user profile page showing stats, game collection, follow button and share link')">👤 Profile</button>
+                    <button class="quick-btn" onclick="setFeature('RAWG game search in library page — search any game and add it with a status')">🔍 Search</button>
+                    <button class="quick-btn" onclick="setFeature('Export library as CSV — download button that generates a CSV file with all games')">📥 Export</button>
+                </div>
+                <textarea class="form-textarea" id="feature-input"
+                    placeholder="e.g. Login page with email/password and Google OAuth. Users can register, login, and see error messages for invalid input..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Additional Context (optional)</label>
+                <input type="text" class="form-input" id="context-input"
+                    placeholder="e.g. Focus on unauthenticated states, mobile viewport, error handling...">
+            </div>
+
+            <button class="generate-btn" id="generate-btn" onclick="generateTests()">
+                🤖 GENERATE TESTS WITH AI
+            </button>
+
+            <!-- HISTORY -->
+            <div class="history-section" id="history-section" style="display:none;">
+                <p class="panel-title" style="margin-top:1rem;">🕐 RECENT GENERATIONS</p>
+                <div id="history-list"></div>
+            </div>
+        </div>
+
+        <!-- OUTPUT PANEL -->
+        <div class="panel output-panel">
+            <div class="code-header">
+                <p class="panel-title" style="margin-bottom:0;">📄 GENERATED TESTS</p>
+                <div class="code-actions">
+                    <span class="copy-success" id="copy-success">✅ Copied!</span>
+                    <button class="code-action-btn" onclick="copyTests()">📋 Copy</button>
+                    <button class="code-action-btn" onclick="downloadTests()">⬇️ Download</button>
+                    <button class="code-action-btn" onclick="clearOutput()">🗑️ Clear</button>
+                </div>
+            </div>
+
+            <div id="stats-row" class="stats-row" style="display:none;">
+                <div class="stat-pill">Tests: <span id="test-count">0</span></div>
+                <div class="stat-pill">Lines: <span id="line-count">0</span></div>
+                <div class="stat-pill">Generated: <span id="gen-time">-</span></div>
+            </div>
+
+            <div class="code-output empty" id="code-output">
+                <span style="font-size:2rem;">🤖</span>
+                <span>Your generated tests will appear here</span>
+                <span style="font-size:0.8rem;color:#333;">Describe a feature and click Generate</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let generatedCode = '';
+        let history = JSON.parse(localStorage.getItem('ai-tester-history') || '[]');
+
+        function setFeature(text) {
+            document.getElementById('feature-input').value = text;
+            document.getElementById('feature-input').focus();
+        }
+
+        async function generateTests() {
+            const feature = document.getElementById('feature-input').value.trim();
+            const url = document.getElementById('app-url').value.trim();
+            const context = document.getElementById('context-input').value.trim();
+
+            if (!feature) {
+                document.getElementById('feature-input').style.borderColor = '#ff3c78';
+                setTimeout(() => document.getElementById('feature-input').style.borderColor = '', 2000);
+                return;
+            }
+
+            const btn = document.getElementById('generate-btn');
+            const output = document.getElementById('code-output');
+
+            btn.disabled = true;
+            btn.textContent = '⏳ Generating...';
+            output.className = 'code-output loading';
+            output.innerHTML = '<span class="loading-dots" style="font-family:\'Rajdhani\',sans-serif;color:#7828c8;font-size:1.1rem;">🤖 AI is writing your tests</span>';
+            document.getElementById('stats-row').style.display = 'none';
+
+            const startTime = Date.now();
+
+            try {
+                const res = await fetch('/api/generate-tests', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ feature, url, context })
+                });
+
+                const data = await res.json();
+
+                if (data.error) {
+                    output.className = 'code-output empty';
+                    output.innerHTML = `<span style="color:#ff3c78;">❌ Error: ${data.error}</span>`;
+                    return;
+                }
+
+                generatedCode = data.tests;
+                const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+                const testCount = (generatedCode.match(/test\(/g) || []).length;
+                const lineCount = generatedCode.split('\n').length;
+
+                output.className = 'code-output';
+                output.textContent = generatedCode;
+
+                document.getElementById('stats-row').style.display = 'flex';
+                document.getElementById('test-count').textContent = testCount;
+                document.getElementById('line-count').textContent = lineCount;
+                document.getElementById('gen-time').textContent = `${elapsed}s`;
+
+                // Save to history
+                const historyItem = {
+                    feature: feature.substring(0, 60) + (feature.length > 60 ? '...' : ''),
+                    code: generatedCode,
+                    time: new Date().toLocaleTimeString()
+                };
+                history.unshift(historyItem);
+                history = history.slice(0, 5);
+                localStorage.setItem('ai-tester-history', JSON.stringify(history));
+                renderHistory();
+
+            } catch (err) {
+                output.className = 'code-output empty';
+                output.innerHTML = `<span style="color:#ff3c78;">❌ Failed to connect. Check your connection.</span>`;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '🤖 GENERATE TESTS WITH AI';
+            }
+        }
+
+        function copyTests() {
+            if (!generatedCode) return;
+            navigator.clipboard.writeText(generatedCode);
+            const msg = document.getElementById('copy-success');
+            msg.style.display = 'inline';
+            setTimeout(() => msg.style.display = 'none', 2000);
+        }
+
+        function downloadTests() {
+            if (!generatedCode) return;
+            const blob = new Blob([generatedCode], { type: 'text/javascript' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'generated_tests.spec.js';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearOutput() {
+            generatedCode = '';
+            const output = document.getElementById('code-output');
+            output.className = 'code-output empty';
+            output.innerHTML = `
+                <span style="font-size:2rem;">🤖</span>
+                <span>Your generated tests will appear here</span>
+                <span style="font-size:0.8rem;color:#333;">Describe a feature and click Generate</span>
+            `;
+            document.getElementById('stats-row').style.display = 'none';
+        }
+
+        function renderHistory() {
+            if (history.length === 0) return;
+            document.getElementById('history-section').style.display = 'block';
+            document.getElementById('history-list').innerHTML = history.map((item, i) => `
+                <div class="history-item" onclick="loadFromHistory(${i})">
+                    <span class="history-item-text">${item.feature}</span>
+                    <span class="history-item-time">${item.time}</span>
+                </div>
+            `).join('');
+        }
+
+        function loadFromHistory(index) {
+            const item = history[index];
+            generatedCode = item.code;
+            const output = document.getElementById('code-output');
+            output.className = 'code-output';
+            output.textContent = generatedCode;
+
+            const testCount = (generatedCode.match(/test\(/g) || []).length;
+            const lineCount = generatedCode.split('\n').length;
+            document.getElementById('stats-row').style.display = 'flex';
+            document.getElementById('test-count').textContent = testCount;
+            document.getElementById('line-count').textContent = lineCount;
+            document.getElementById('gen-time').textContent = item.time;
+        }
+
+        // Allow Ctrl+Enter to generate
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                generateTests();
+            }
+        });
+
+        // Init history
+        renderHistory();
+    </script>
+</body>
+</html>
